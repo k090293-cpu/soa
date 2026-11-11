@@ -2,12 +2,22 @@ import React from 'react';
 import { useStudio } from '../context/StudioContext';
 import { ArrowDown, ArrowUpRight, Play, CheckCircle2, TrendingUp, Sparkles } from 'lucide-react';
 import { TRUST_STATS } from '../data/servicesData';
+import { EditableText } from './editable/EditableText';
 
 export const Hero: React.FC = () => {
-  const { navigateTo, setActiveProjectDetail, projects, menuContent } = useStudio();
+  const {
+    navigateTo,
+    setActiveProjectDetail,
+    projects,
+    menuContent,
+    updateHomeContent,
+    addHomeKpi,
+    isHomeInlineEditMode,
+  } = useStudio();
 
   const featuredProject = projects[0];
   const homeData = menuContent.home;
+  const kpiList = homeData.kpis && homeData.kpis.length > 0 ? homeData.kpis : TRUST_STATS;
 
   return (
     <section id="hero" className="relative pt-8 pb-16 md:pt-14 md:pb-24 overflow-hidden">
@@ -22,17 +32,31 @@ export const Hero: React.FC = () => {
             {/* Domain Kicker */}
             <div className="inline-flex items-center gap-2 text-xs font-semibold tracking-wider text-blue-400">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-              <span>{homeData.heroKicker || 'PORTFOLIO_SO.A / WEB & MOTION STUDIO'}</span>
+              <EditableText
+                value={homeData.heroKicker || 'PORTFOLIO_SO.A / WEB & MOTION STUDIO'}
+                onSave={(v) => updateHomeContent({ heroKicker: v })}
+                label="상단 킥커"
+              />
             </div>
 
             {/* Massive Editorial Headline with text-wrap: balance */}
             <h1 className="font-display font-extrabold text-4xl sm:text-5xl md:text-6xl lg:text-[4.2rem] leading-[1.08] tracking-tight text-white whitespace-pre-line" style={{ textWrap: 'balance' }}>
-              {homeData.heroHeadline}
+              <EditableText
+                value={homeData.heroHeadline}
+                onSave={(v) => updateHomeContent({ heroHeadline: v })}
+                label="메인 헤드라인"
+                multiline
+              />
             </h1>
 
             {/* Sub-headline & Positioning */}
             <p className="text-base sm:text-lg text-zinc-300 font-normal leading-relaxed max-w-2xl whitespace-pre-line">
-              {homeData.heroSubheadline}
+              <EditableText
+                value={homeData.heroSubheadline}
+                onSave={(v) => updateHomeContent({ heroSubheadline: v })}
+                label="서브 카피"
+                multiline
+              />
             </p>
 
             {/* Core Capability Chips - Clean unboxed text with subtle dividers */}
@@ -127,18 +151,65 @@ export const Hero: React.FC = () => {
         {/* Full-Width Quantitative Trust & KPI Strip below the hero split */}
         <div className="mt-14 pt-10 border-t border-zinc-800/80">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 lg:gap-8">
-            {(homeData.kpis && homeData.kpis.length > 0 ? homeData.kpis : TRUST_STATS).map((stat, idx) => (
+            {kpiList.map((stat, idx) => (
               <div key={idx} className="space-y-1">
                 <div className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight text-white tabular-nums">
-                  {stat.value}
+                  <EditableText
+                    value={stat.value}
+                    onSave={(v) => {
+                      const next = kpiList.map((k, i) => (i === idx ? { ...k, value: v } : k));
+                      updateHomeContent({
+                        kpis: next.map((k) => ({ value: k.value, label: k.label, sub: k.sub })),
+                      });
+                    }}
+                    label={`KPI ${idx + 1} 수치`}
+                  />
                 </div>
-                <div className="text-xs sm:text-sm font-semibold text-zinc-300">{stat.label}</div>
-                <div className="text-xs text-zinc-500">{stat.sub}</div>
+                <div className="text-xs sm:text-sm font-semibold text-zinc-300">
+                  <EditableText
+                    value={stat.label}
+                    onSave={(v) => {
+                      const next = kpiList.map((k, i) => (i === idx ? { ...k, label: v } : k));
+                      updateHomeContent({
+                        kpis: next.map((k) => ({ value: k.value, label: k.label, sub: k.sub })),
+                      });
+                    }}
+                    label={`KPI ${idx + 1} 제목`}
+                  />
+                </div>
+                <div className="text-xs text-zinc-500">
+                  <EditableText
+                    value={stat.sub}
+                    onSave={(v) => {
+                      const next = kpiList.map((k, i) => (i === idx ? { ...k, sub: v } : k));
+                      updateHomeContent({
+                        kpis: next.map((k) => ({ value: k.value, label: k.label, sub: k.sub })),
+                      });
+                    }}
+                    label={`KPI ${idx + 1} 설명`}
+                  />
+                </div>
               </div>
             ))}
           </div>
+
+          {/* KPI 추가 — 편집 모드에서만 노출 */}
+          {isHomeInlineEditMode && (
+            <div className="pt-6">
+              <button
+                type="button"
+                onClick={() =>
+                  addHomeKpi({ value: '{VALUE}', label: '새 지표', sub: '설명을 입력하세요' })
+                }
+                className="px-4 py-2 rounded-xl border border-dashed border-blue-500/60 text-blue-300 hover:text-white hover:bg-blue-600/20 text-xs font-semibold transition-colors cursor-pointer"
+              >
+                + KPI 지표 추가
+              </button>
+            </div>
+          )}
         </div>
       </div>
+
     </section>
   );
 };

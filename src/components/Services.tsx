@@ -2,9 +2,10 @@ import React from 'react';
 import { useStudio } from '../context/StudioContext';
 import { SERVICES_LIST } from '../data/servicesData';
 import { ArrowUpRight, CheckCircle2, Clock, Sparkles } from 'lucide-react';
+import { EditableText } from './editable/EditableText';
 
 export const Services: React.FC = () => {
-  const { scrollToSection, setSelectedInquiryCategory, menuContent } = useStudio();
+  const { scrollToSection, setSelectedInquiryCategory, menuContent, updateHomeContent } = useStudio();
 
   const handleInquireService = (serviceTitle: string) => {
     setSelectedInquiryCategory(serviceTitle);
@@ -26,11 +27,24 @@ export const Services: React.FC = () => {
           </div>
 
           <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight">
-            제공 서비스 및 작업 범위
+            <EditableText
+              value={menuContent.home.serviceTitle || '제공 서비스 및 작업 범위'}
+              onSave={(v) => updateHomeContent({ serviceTitle: v })}
+              label="SERVICES 제목"
+              multiline
+            />
           </h2>
 
           <p className="text-zinc-400 text-sm sm:text-base leading-relaxed">
-            필요한 단건 디자인부터 웹과 영상이 통합된 올인원 패키지까지, 귀사의 예산과 마케팅 목적에 부합하는 명확한 작업 범위를 제안합니다.
+            <EditableText
+              value={
+                menuContent.home.serviceSubtitle ||
+                '필요한 단건 디자인부터 웹과 영상이 통합된 올인원 패키지까지, 귀사의 예산과 마케팅 목적에 부합하는 명확한 작업 범위를 제안합니다.'
+              }
+              onSave={(v) => updateHomeContent({ serviceSubtitle: v })}
+              label="SERVICES 설명"
+              multiline
+            />
           </p>
         </div>
 

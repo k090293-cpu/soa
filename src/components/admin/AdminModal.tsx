@@ -3,6 +3,8 @@ import { useStudio } from '../../context/StudioContext';
 import { Project, InquiryStatus } from '../../types';
 import { ProjectFormModal } from './ProjectFormModal';
 import { MenuContentEditor } from './MenuContentEditor';
+import { LayerPanel } from './LayerPanel';
+import { SplitHomeEditor } from './SplitHomeEditor';
 import { HomePage } from '../../pages/HomePage';
 import {
   Lock,
@@ -64,7 +66,7 @@ export const AdminModal: React.FC = () => {
   const [loginError, setLoginError] = useState(false);
 
   // Tabs
-  const [activeTab, setActiveTab] = useState<'content' | 'preview' | 'projects' | 'inquiries' | 'settings'>('content');
+  const [activeTab, setActiveTab] = useState<'content' | 'preview' | 'layers' | 'projects' | 'inquiries' | 'settings'>('content');
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
 
   // Project form modal state
@@ -228,14 +230,21 @@ export const AdminModal: React.FC = () => {
       <div
         className={
           isSplitEditorOpen
-            ? 'fixed inset-0 z-50 pointer-events-none flex justify-end animate-in fade-in duration-150'
+            ? 'fixed inset-0 z-50 flex animate-in fade-in duration-150 bg-black/50'
             : 'fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-150'
         }
       >
+        {/* 분할 모드: 홈 화면을 옆에 실제로 렌더 (글자 수정 · 레이어 편집) */}
+        {isSplitEditorOpen && isAdminLoggedIn && (
+          <div className="hidden md:flex flex-1 min-w-0 h-full">
+            <SplitHomeEditor />
+          </div>
+        )}
+
         <div
           className={
             isSplitEditorOpen
-              ? 'pointer-events-auto relative w-full sm:w-[540px] md:w-[620px] h-full bg-[#0e0f14] border-l border-zinc-800 shadow-2xl overflow-hidden flex flex-col'
+              ? 'pointer-events-auto relative w-full md:w-[520px] lg:w-[600px] shrink-0 h-full bg-[#0e0f14] border-l border-zinc-800 shadow-2xl overflow-hidden flex flex-col'
               : 'relative w-full max-w-5xl bg-[#0e0f14] border border-zinc-800 rounded-2xl md:rounded-3xl shadow-2xl overflow-hidden my-auto flex flex-col'
           }
           onClick={(e) => e.stopPropagation()}
@@ -359,6 +368,18 @@ export const AdminModal: React.FC = () => {
                   >
                     <Eye className="w-4 h-4 text-emerald-400" />
                     <span>전체 홈 실시간 뷰어</span>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveTab('layers')}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer ${
+                      activeTab === 'layers'
+                        ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+                        : 'text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-800'
+                    }`}
+                  >
+                    <Layers className="w-4 h-4 text-amber-400" />
+                    <span>홈 레이어 편집</span>
                   </button>
 
                   <button
@@ -794,6 +815,9 @@ export const AdminModal: React.FC = () => {
 
               {/* Tab: Menu & Category Content Editor */}
               {activeTab === 'content' && <MenuContentEditor />}
+
+              {/* Tab: Home Layer Editor (생성/삭제/편집) */}
+              {activeTab === 'layers' && <LayerPanel />}
 
               {/* Tab: Entire Live Home Preview */}
               {activeTab === 'preview' && (

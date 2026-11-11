@@ -1,9 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useStudio } from '../context/StudioContext';
 import { ArrowUpRight, CheckCircle2, Mail, Phone, MessageSquare, Copy, Check, Send, AlertCircle } from 'lucide-react';
+import { EditableText } from './editable/EditableText';
 
 export const Contact: React.FC = () => {
-  const { addInquiry, config, selectedInquiryCategory, setSelectedInquiryCategory, menuContent } = useStudio();
+  const {
+    addInquiry,
+    config,
+    selectedInquiryCategory,
+    setSelectedInquiryCategory,
+    menuContent,
+    updateContactContent,
+  } = useStudio();
   const contactData = menuContent.contact;
 
   // Form states
@@ -130,11 +138,21 @@ export const Contact: React.FC = () => {
           </div>
 
           <h2 className="font-display text-4xl sm:text-5xl md:text-6xl font-extrabold text-white tracking-tight whitespace-pre-line" style={{ textWrap: 'balance' }}>
-            {contactData.headerTitle}
+            <EditableText
+              value={contactData.headerTitle}
+              onSave={(v) => updateContactContent({ headerTitle: v })}
+              label="CONTACT 제목"
+              multiline
+            />
           </h2>
 
           <p className="text-zinc-400 text-sm sm:text-base leading-relaxed whitespace-pre-line">
-            {contactData.introDescription}
+            <EditableText
+              value={contactData.introDescription}
+              onSave={(v) => updateContactContent({ introDescription: v })}
+              label="CONTACT 설명"
+              multiline
+            />
           </p>
         </div>
 

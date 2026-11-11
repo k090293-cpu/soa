@@ -105,12 +105,54 @@ export interface AboutStrengthItem {
   desc: string;
 }
 
+/**
+ * 홈 화면 위에 자유롭게 얹는 커스텀 레이어(요소).
+ * - 'text'  : 자유 문구 (제목/설명/이벤트 안내 등)
+ * - 'badge' : 강조 배지형 문구
+ * - 'image' : 이미지
+ */
+export type HomeLayerType = 'text' | 'badge' | 'image';
+
+export interface HomeLayer {
+  id: string;
+  type: HomeLayerType;
+  /** text/badge 는 문구, image 는 이미지 URL */
+  content: string;
+  /** 홈 영역 기준 위치 (%) */
+  x: number;
+  y: number;
+  /** 홈 영역 기준 너비 (%) */
+  width: number;
+  /** 글자 크기 (px, 홈 기준) */
+  fontSize: number;
+  /** 글자/배경 색상 (hex) */
+  color: string;
+  /** 정렬 */
+  align: 'left' | 'center' | 'right';
+  /** 회전 각도 (deg) */
+  rotation: number;
+  /** 투명도 0~100 */
+  opacity: number;
+  /** 표시 여부 */
+  visible: boolean;
+  /** 굵게 */
+  bold?: boolean;
+}
+
 export interface HomeContent {
   heroKicker: string;
   heroHeadline: string;
   heroSubheadline: string;
   capabilities: string[];
   kpis: { id?: string; value: string; label: string; sub: string }[];
+  /** Works 섹션 헤더 (미지정 시 기본 문구 사용) */
+  worksTitle?: string;
+  worksSubtitle?: string;
+  /** Services 섹션 헤더 (미지정 시 기본 문구 사용) */
+  serviceTitle?: string;
+  serviceSubtitle?: string;
+  /** 홈 위에 얹는 커스텀 레이어 목록 */
+  layers?: HomeLayer[];
 }
 
 export interface AboutContent {

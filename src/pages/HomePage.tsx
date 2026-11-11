@@ -7,13 +7,17 @@ import { Process } from '../components/Process';
 import { Trust } from '../components/Trust';
 import { Contact } from '../components/Contact';
 import { useStudio } from '../context/StudioContext';
+import { HomeLayersOverlay } from '../components/editable/HomeLayersOverlay';
 import { ArrowRight, Sparkles } from 'lucide-react';
 
 export const HomePage: React.FC = () => {
   const { navigateTo } = useStudio();
 
   return (
-    <div className="space-y-0 animate-in fade-in duration-200">
+    <div className="relative space-y-0 animate-in fade-in duration-200">
+      {/* 관리자가 얹은 커스텀 레이어 (홈 전체 기준) */}
+      <HomeLayersOverlay />
+
       {/* 01. HERO */}
       <Hero />
 

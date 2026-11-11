@@ -13,6 +13,7 @@ import {
   NavMenuItem,
   WorksCategoryItem,
   AboutStrengthItem,
+  HomeLayer,
 } from '../types';
 import { INITIAL_PROJECTS, INITIAL_INQUIRIES, INITIAL_STUDIO_CONFIG } from '../data/initialProjects';
 import {
@@ -51,6 +52,18 @@ interface StudioContextType {
   reorderHomeKpis: (index: number, direction: 'up' | 'down') => void;
   deleteHomeKpi: (index: number) => void;
   addHomeKpi: (kpi: { value: string; label: string; sub: string }) => void;
+  // 홈 커스텀 레이어 편집 (생성/수정/삭제)
+  addHomeLayer: (layer: Omit<HomeLayer, 'id'>) => string;
+  updateHomeLayer: (id: string, data: Partial<HomeLayer>) => void;
+  deleteHomeLayer: (id: string) => void;
+  moveHomeLayer: (index: number, direction: 'up' | 'down') => void;
+  resetHomeLayers: () => void;
+  /** 홈 위에서 직접 글자를 수정할 수 있는 편집 모드 여부 */
+  isHomeInlineEditMode: boolean;
+  setIsHomeInlineEditMode: (on: boolean) => void;
+  /** 현재 선택된 레이어 id */
+  selectedHomeLayerId: string | null;
+  setSelectedHomeLayerId: (id: string | null) => void;
   // Editor view modes (Modal vs Split Home Preview)
   isSplitEditorOpen: boolean;
   setIsSplitEditorOpen: (open: boolean) => void;
@@ -171,6 +184,10 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Split Editor View Mode (Edit while viewing full home)
   const [isSplitEditorOpen, setIsSplitEditorOpen] = useState(false);
+
+  // 홈 위 직접 편집 모드 & 선택된 레이어
+  const [isHomeInlineEditMode, setIsHomeInlineEditMode] = useState(false);
+  const [selectedHomeLayerId, setSelectedHomeLayerId] = useState<string | null>(null);
 
   // Page Routing State ('home' | 'about' | 'works' | 'service' | 'contact')
   const [currentPage, setCurrentPage] = useState<NavPage>(() => {
@@ -605,6 +622,56 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }));
   };
 
+  // 홈 커스텀 레이어 (생성/수정/삭제/순서) -------------------------------------
+  const addHomeLayer = (layer: Omit<HomeLayer, 'id'>) => {
+    const newLayer: HomeLayer = { ...layer, id: `layer-${Date.now()}-${Math.random().toString(36).slice(2, 6)}` };
+    setMenuContent((prev) => ({
+      ...prev,
+      home: {
+        ...prev.home,
+        layers: [...(prev.home.layers || []), newLayer],
+      },
+    }));
+    return newLayer.id;
+  };
+
+  const updateHomeLayer = (id: string, data: Partial<HomeLayer>) => {
+    setMenuContent((prev) => ({
+      ...prev,
+      home: {
+        ...prev.home,
+        layers: (prev.home.layers || []).map((l) => (l.id === id ? { ...l, ...data } : l)),
+      },
+    }));
+  };
+
+  const deleteHomeLayer = (id: string) => {
+    setMenuContent((prev) => ({
+      ...prev,
+      home: {
+        ...prev.home,
+        layers: (prev.home.layers || []).filter((l) => l.id !== id),
+      },
+    }));
+  };
+
+  const moveHomeLayer = (index: number, direction: 'up' | 'down') => {
+    setMenuContent((prev) => ({
+      ...prev,
+      home: {
+        ...prev.home,
+        layers: moveItemInArray(prev.home.layers || [], index, direction),
+      },
+    }));
+  };
+
+  const resetHomeLayers = () => {
+    setMenuContent((prev) => ({
+      ...prev,
+      home: { ...prev.home, layers: [] },
+    }));
+  };
+
   const scrollToSection = (sectionId: string) => {
     const el = document.getElementById(sectionId);
     if (el) {
@@ -648,6 +715,15 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         reorderHomeKpis,
         deleteHomeKpi,
         addHomeKpi,
+        addHomeLayer,
+        updateHomeLayer,
+        deleteHomeLayer,
+        moveHomeLayer,
+        resetHomeLayers,
+        isHomeInlineEditMode,
+        setIsHomeInlineEditMode,
+        selectedHomeLayerId,
+        setSelectedHomeLayerId,
         isSplitEditorOpen,
         setIsSplitEditorOpen,
         currentPage,

@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { useStudio } from '../context/StudioContext';
 import { ProjectCategory, Project } from '../types';
 import { ArrowUpRight, TrendingUp, Sparkles, Filter } from 'lucide-react';
+import { EditableText } from './editable/EditableText';
 
 export const Works: React.FC = () => {
-  const { projects, setActiveProjectDetail, menuContent } = useStudio();
+  const { projects, setActiveProjectDetail, menuContent, updateHomeContent } = useStudio();
   const [activeFilter, setActiveFilter] = useState<string>('all');
 
   const categoriesList = menuContent.worksCategories && menuContent.worksCategories.length > 0
@@ -35,11 +36,23 @@ export const Works: React.FC = () => {
               <span>03. SELECTED PORTFOLIO</span>
             </div>
             <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight">
-              실적으로 증명하는 <br className="hidden sm:inline" />
-              대표 포트폴리오
+              <EditableText
+                value={menuContent.home.worksTitle || '실적으로 증명하는 대표 포트폴리오'}
+                onSave={(v) => updateHomeContent({ worksTitle: v })}
+                label="WORKS 제목"
+                multiline
+              />
             </h2>
             <p className="text-zinc-400 text-sm max-w-xl">
-              단순한 시각적 나열을 넘어, 실제 매출과 클릭 전환을 견인한 프로젝트 케이스 스터디입니다.
+              <EditableText
+                value={
+                  menuContent.home.worksSubtitle ||
+                  '단순한 시각적 나열을 넘어, 실제 매출과 클릭 전환을 견인한 프로젝트 케이스 스터디입니다.'
+                }
+                onSave={(v) => updateHomeContent({ worksSubtitle: v })}
+                label="WORKS 설명"
+                multiline
+              />
             </p>
           </div>
 
