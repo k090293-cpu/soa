@@ -1,0 +1,6 @@
+{
+  "name": "IMPACT STUDIO | Web & Video Design Studio",
+  "description": "보이는 디자인을 넘어 성과를 만드는 웹디자인 & 영상 콘텐츠 크리에이티브 디자인 스튜디오 포트폴리오",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
