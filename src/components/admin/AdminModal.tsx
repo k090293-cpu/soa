@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useStudio } from '../../context/StudioContext';
 import { Project, InquiryStatus } from '../../types';
 import { ProjectFormModal } from './ProjectFormModal';
@@ -27,7 +27,8 @@ import {
   Smartphone,
   Columns,
   Maximize2,
-  Eye
+  Eye,
+  Layers
 } from 'lucide-react';
 
 export const AdminModal: React.FC = () => {
@@ -40,6 +41,7 @@ export const AdminModal: React.FC = () => {
     projects,
     inquiries,
     config,
+    menuContent,
     addProject,
     updateProject,
     deleteProject,
@@ -62,6 +64,35 @@ export const AdminModal: React.FC = () => {
   // Project form modal state
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [isProjectFormOpen, setIsProjectFormOpen] = useState(false);
+
+  // 포트폴리오 카테고리별 필터 상태 ('all' | 카테고리 key)
+  const [projectCategoryFilter, setProjectCategoryFilter] = useState<string>('all');
+
+  // 관리자에서 관리하는 카테고리 목록
+  const projectCategories = useMemo(() => {
+    const list = menuContent.worksCategories || [];
+    if (list.length > 0) return list;
+    return [
+      { id: 'cat-web', key: 'web', label: '01. WEB DESIGN', desc: '상세페이지 · 배너 · UI/UX' },
+      { id: 'cat-promotion', key: 'promotion', label: '02. PROMOTION DESIGN', desc: '이벤트 · 광고 소재 · 프로모션' },
+      { id: 'cat-video', key: 'video', label: '03. VIDEO DESIGN', desc: '숏폼 · 릴스 · 모션 그래픽' },
+    ];
+  }, [menuContent.worksCategories]);
+
+  // 카테고리별 프로젝트 개수 집계
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    projects.forEach((p) => {
+      counts[p.category] = (counts[p.category] || 0) + 1;
+    });
+    return counts;
+  }, [projects]);
+
+  // 필터가 적용된 프로젝트 목록
+  const visibleProjects = useMemo(() => {
+    if (projectCategoryFilter === 'all') return projects;
+    return projects.filter((p) => p.category === projectCategoryFilter);
+  }, [projects, projectCategoryFilter]);
 
   // Studio config form state
   const [bannerInput, setBannerInput] = useState(config.statusBanner);
@@ -206,7 +237,7 @@ export const AdminModal: React.FC = () => {
               <div className="space-y-1.5">
                 <h4 className="text-xl font-bold text-white">관리자 인증이 필요합니다</h4>
                 <p className="text-xs text-zinc-400">
-                  포트폴리오 수정 및 접수된 견적 문의 조회를 위해 지정된 관리자 비밀번호(<strong className="text-blue-400">1012</strong>)를 입력하세요.
+                  포트폴리오 수정 및 접수된 견적 문의 조회를 위해 관리자 비밀번호를 입력하세요.
                 </p>
               </div>
 
@@ -219,14 +250,14 @@ export const AdminModal: React.FC = () => {
                       setPasswordInput(e.target.value);
                       setLoginError(false);
                     }}
-                    placeholder="비밀번호 1012 입력"
+                    placeholder="비밀번호 입력"
                     className="w-full px-4 py-3 rounded-xl bg-zinc-950 border border-zinc-800 text-sm text-center text-white tracking-widest placeholder:tracking-normal placeholder:text-zinc-600 focus:outline-none focus:border-blue-500 font-mono"
                     autoFocus
                   />
                   {loginError && (
                     <p className="text-xs text-red-400 flex items-center justify-center gap-1 pt-1">
                       <AlertCircle className="w-3.5 h-3.5" />
-                      <span>비밀번호가 일치하지 않습니다. (지정 번호: 1012)</span>
+                      <span>비밀번호가 일치하지 않습니다.</span>
                     </p>
                   )}
                 </div>
@@ -472,64 +503,153 @@ export const AdminModal: React.FC = () => {
                 </div>
               )}
 
-              {/* Tab 2: Projects Management */}
+              {/* Tab 2: Projects Management — 카테고리별 관리 */}
               {activeTab === 'projects' && (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {projects.map((p) => (
-                      <div
-                        key={p.id}
-                        className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 flex gap-4 items-center justify-between"
+                  {/* 카테고리별 필터 탭 */}
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
+                        <Layers className="w-3.5 h-3.5 text-blue-400" />
+                        <span>카테고리별 포트폴리오 관리</span>
+                      </span>
+                      <span className="text-[11px] font-mono text-zinc-500">
+                        총 {projects.length}개 · {projectCategories.length}개 카테고리
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-zinc-950 border border-zinc-850 rounded-xl">
+                      <button
+                        onClick={() => setProjectCategoryFilter('all')}
+                        className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer whitespace-nowrap ${
+                          projectCategoryFilter === 'all'
+                            ? 'bg-blue-600 text-white shadow-sm'
+                            : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+                        }`}
                       >
-                        <div className="flex items-center gap-3 overflow-hidden">
-                          <img
-                            src={p.image}
-                            alt={p.title}
-                            className="w-16 h-16 rounded-xl object-cover shrink-0 border border-zinc-800"
-                            referrerPolicy="no-referrer"
-                          />
-                          <div className="space-y-1 min-w-0">
-                            <span className="text-[10px] font-mono text-blue-400 block">
-                              {p.categoryLabel}
+                        전체 ({projects.length})
+                      </button>
+
+                      {projectCategories.map((cat) => {
+                        const count = categoryCounts[cat.key] || 0;
+                        const isActive = projectCategoryFilter === cat.key;
+                        return (
+                          <button
+                            key={cat.id || cat.key}
+                            onClick={() => setProjectCategoryFilter(cat.key)}
+                            title={cat.desc}
+                            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                              isActive
+                                ? 'bg-blue-600 text-white shadow-sm'
+                                : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+                            }`}
+                          >
+                            <span>{cat.label}</span>
+                            <span
+                              className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
+                                isActive ? 'bg-blue-500/40 text-white' : 'bg-zinc-900 text-zinc-500'
+                              }`}
+                            >
+                              {count}
                             </span>
-                            <h4 className="text-sm font-bold text-white truncate">{p.title}</h4>
-                            <p className="text-xs text-zinc-400 truncate">{p.subtitle}</p>
-                            <div className="flex items-center gap-1.5 pt-0.5">
-                              <span className="text-[11px] text-blue-400 font-semibold">
-                                {p.impactMetric.value} ({p.impactMetric.label})
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 선택된 카테고리 안내 */}
+                  {projectCategoryFilter !== 'all' && (
+                    <div className="p-3 rounded-xl bg-blue-950/20 border border-blue-900/40 text-[11px] text-blue-300">
+                      <strong className="text-blue-200">
+                        {projectCategories.find((c) => c.key === projectCategoryFilter)?.label}
+                      </strong>{' '}
+                      카테고리 · {visibleProjects.length}개 프로젝트
+                      {projectCategories.find((c) => c.key === projectCategoryFilter)?.desc && (
+                        <span className="text-zinc-400">
+                          {' '}
+                          — {projectCategories.find((c) => c.key === projectCategoryFilter)?.desc}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* 프로젝트 목록 */}
+                  {visibleProjects.length === 0 ? (
+                    <div className="p-12 text-center rounded-2xl bg-zinc-950 border border-zinc-900 space-y-2">
+                      <p className="text-xs text-zinc-500">
+                        {projectCategoryFilter === 'all'
+                          ? '등록된 포트폴리오가 없습니다.'
+                          : '이 카테고리에 등록된 프로젝트가 없습니다.'}
+                      </p>
+                      <button
+                        onClick={handleOpenAddProject}
+                        className="text-xs text-blue-400 hover:underline cursor-pointer"
+                      >
+                        새 프로젝트 등록하기
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {visibleProjects.map((p) => (
+                        <div
+                          key={p.id}
+                          className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 flex gap-4 items-center justify-between"
+                        >
+                          <div className="flex items-center gap-3 overflow-hidden">
+                            <img
+                              src={p.image}
+                              alt={p.title}
+                              className="w-16 h-16 rounded-xl object-cover shrink-0 border border-zinc-800"
+                              referrerPolicy="no-referrer"
+                            />
+                            <div className="space-y-1 min-w-0">
+                              <span className="text-[10px] font-mono text-blue-400 block">
+                                {p.categoryLabel}
                               </span>
-                              {p.gallery && p.gallery.length > 0 && (
-                                <span className="text-[10px] text-zinc-400 font-mono">
-                                  · 미디어 {p.gallery.length}개
-                                </span>
+                              <h4 className="text-sm font-bold text-white truncate">{p.title}</h4>
+                              {p.subtitle && (
+                                <p className="text-xs text-zinc-400 truncate">{p.subtitle}</p>
                               )}
+                              <div className="flex items-center gap-1.5 pt-0.5">
+                                {p.impactMetric && (
+                                  <span className="text-[11px] text-blue-400 font-semibold">
+                                    {p.impactMetric.value} ({p.impactMetric.label})
+                                  </span>
+                                )}
+                                {p.gallery && p.gallery.length > 0 && (
+                                  <span className="text-[10px] text-zinc-400 font-mono">
+                                    · 미디어 {p.gallery.length}개
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
 
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <button
-                            onClick={() => handleOpenEditProject(p)}
-                            className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-colors cursor-pointer"
-                            title="수정하기"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (confirm(`'${p.title}' 프로젝트를 삭제하시겠습니까?`)) {
-                                deleteProject(p.id);
-                              }
-                            }}
-                            className="p-2 rounded-lg bg-zinc-900 hover:bg-red-950 text-zinc-400 hover:text-red-400 transition-colors cursor-pointer"
-                            title="삭제하기"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              onClick={() => handleOpenEditProject(p)}
+                              className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                              title="수정하기"
+                            >
+                              <Edit3 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm(`'${p.title}' 프로젝트를 삭제하시겠습니까?`)) {
+                                  deleteProject(p.id);
+                                }
+                              }}
+                              className="p-2 rounded-lg bg-zinc-900 hover:bg-red-950 text-zinc-400 hover:text-red-400 transition-colors cursor-pointer"
+                              title="삭제하기"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 

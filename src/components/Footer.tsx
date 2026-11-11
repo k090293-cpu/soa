@@ -88,7 +88,7 @@ export const Footer: React.FC = () => {
               className="flex items-center gap-1.5 text-[11px] text-zinc-500 hover:text-blue-400 transition-colors cursor-pointer"
             >
               {isAdminLoggedIn ? <ShieldCheck className="w-3.5 h-3.5 text-blue-400" /> : <Lock className="w-3 h-3" />}
-              <span>{isAdminLoggedIn ? '관리자 대시보드' : '포트폴리오 관리자 (비번: 1012)'}</span>
+              <span>{isAdminLoggedIn ? '관리자 대시보드' : '포트폴리오 관리자'}</span>
             </button>
 
             <button

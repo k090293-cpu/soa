@@ -1,6 +1,8 @@
 export type NavPage = 'home' | 'about' | 'works' | 'service' | 'contact';
 
-export type ProjectCategory = 'web' | 'promotion' | 'video';
+// 카테고리 키는 관리자 패널에서 자유롭게 추가/변경할 수 있으므로 문자열로 관리합니다.
+// (기본값: 'web' | 'promotion' | 'video')
+export type ProjectCategory = string;
 
 export interface BeforeAfterData {
   beforeImage: string;
@@ -27,25 +29,30 @@ export interface MediaItem {
 export interface Project {
   id: string;
   title: string;
-  subtitle: string;
   category: ProjectCategory;
   categoryLabel: string;
   client: string;
   year: string;
-  summary: string;
   image: string;
   gallery?: MediaItem[];
   secondaryImages?: string[];
   videoPreviewUrl?: string;
   tags: string[];
-  impactMetric: ImpactMetric;
   overview: string;
   strategy: string;
   concept: string;
   scope: string[];
-  deliverables: string[];
   tools: string[];
   featured: boolean;
+  /** @deprecated 등록 폼에서 제거됨. 기존 데이터 호환용으로만 유지 */
+  subtitle?: string;
+  /** @deprecated 등록 폼에서 제거됨. 기존 데이터 호환용으로만 유지 */
+  summary?: string;
+  /** @deprecated 등록 폼에서 제거됨. 기존 데이터 호환용으로만 유지 */
+  impactMetric?: ImpactMetric;
+  /** @deprecated 등록 폼에서 제거됨. 기존 데이터 호환용으로만 유지 */
+  deliverables?: string[];
+  /** @deprecated 등록 폼에서 제거됨. 기존 데이터 호환용으로만 유지 */
   beforeAfter?: BeforeAfterData;
 }
 

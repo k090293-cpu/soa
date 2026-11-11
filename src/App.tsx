@@ -54,7 +54,7 @@ const AppContent: React.FC = () => {
         />
       )}
 
-      {/* Admin Panel Modal (Password: 1012) */}
+      {/* Admin Panel Modal */}
       <AdminModal />
     </div>
   );

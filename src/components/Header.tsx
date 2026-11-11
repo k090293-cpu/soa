@@ -96,7 +96,7 @@ export const Header: React.FC = () => {
             {/* Admin entry trigger */}
             <button
               onClick={() => setIsAdminModalOpen(true)}
-              title={isAdminLoggedIn ? '관리자 대시보드 열기' : '관리자 로그인 (비번 1012)'}
+              title={isAdminLoggedIn ? '관리자 대시보드 열기' : '관리자 로그인'}
               className={`p-2 rounded-lg border text-xs flex items-center gap-1.5 transition-colors cursor-pointer ${
                 isAdminLoggedIn
                   ? 'border-blue-500/50 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20'
@@ -150,7 +150,7 @@ export const Header: React.FC = () => {
                 className="text-xs text-zinc-400 hover:text-white flex items-center gap-1.5"
               >
                 <Lock className="w-3.5 h-3.5" />
-                <span>관리자 로그인 (비번 1012)</span>
+                <span>관리자 로그인</span>
               </button>
             </div>
           </div>

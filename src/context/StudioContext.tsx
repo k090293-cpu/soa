@@ -194,7 +194,7 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
-  // Admin Auth State (Password: 1012)
+  // Admin Auth State
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(() => {
     return sessionStorage.getItem(STORAGE_KEYS.ADMIN_SESSION) === 'true';
   });
@@ -239,9 +239,11 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [menuContent]);
 
-  // Admin Login with required password '1012'
+  // Admin Login
   const loginAdmin = (password: string): boolean => {
-    if (password.trim() === '1012') {
+    // 관리자 비밀번호는 환경변수로 재정의할 수 있습니다. (기본값은 기존 동작 유지)
+    const adminPassword = (import.meta.env.VITE_ADMIN_PASSWORD as string | undefined)?.trim() || '1012';
+    if (password.trim() === adminPassword) {
       setIsAdminLoggedIn(true);
       sessionStorage.setItem(STORAGE_KEYS.ADMIN_SESSION, 'true');
       return true;

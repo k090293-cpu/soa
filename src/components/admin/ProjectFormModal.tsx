@@ -1,6 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { Project, ProjectCategory, MediaItem } from '../../types';
-import { processImageFile, processVideoFile, saveMediaGalleryToDB } from '../../utils/mediaStorage';
+import { useStudio } from '../../context/StudioContext';
+import { processImageFile, processVideoFile } from '../../utils/mediaStorage';
 import {
   X,
   CheckCircle2,
@@ -14,7 +15,8 @@ import {
   Plus,
   AlertCircle,
   Loader2,
-  Sparkles
+  Sparkles,
+  Copy
 } from 'lucide-react';
 
 interface ProjectFormModalProps {
@@ -28,12 +30,25 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
   onSave,
   onClose,
 }) => {
+  const { menuContent, projects } = useStudio();
+
+  // 관리자에서 관리하는 카테고리 목록 (동적)
+  const categories = useMemo(() => {
+    const list = menuContent.worksCategories || [];
+    if (list.length > 0) return list;
+    return [
+      { id: 'cat-web', key: 'web', label: '01. WEB DESIGN' },
+      { id: 'cat-promotion', key: 'promotion', label: '02. PROMOTION DESIGN' },
+      { id: 'cat-video', key: 'video', label: '03. VIDEO DESIGN' },
+    ];
+  }, [menuContent.worksCategories]);
+
   const [title, setTitle] = useState(projectToEdit?.title || '');
-  const [subtitle, setSubtitle] = useState(projectToEdit?.subtitle || '');
-  const [category, setCategory] = useState<ProjectCategory>(projectToEdit?.category || 'web');
+  const [category, setCategory] = useState<ProjectCategory>(
+    projectToEdit?.category || categories[0]?.key || 'web'
+  );
   const [client, setClient] = useState(projectToEdit?.client || '');
   const [year, setYear] = useState(projectToEdit?.year || '2026');
-  const [summary, setSummary] = useState(projectToEdit?.summary || '');
   const [coverImage, setCoverImage] = useState(
     projectToEdit?.image || '/src/assets/images/portfolio_web_cosmetics_1794358690539.jpg'
   );
@@ -55,24 +70,11 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
     ];
   });
 
-  // Before & After upload states
-  const [hasBeforeAfter, setHasBeforeAfter] = useState(!!projectToEdit?.beforeAfter);
-  const [beforeImage, setBeforeImage] = useState(projectToEdit?.beforeAfter?.beforeImage || '');
-  const [afterImage, setAfterImage] = useState(projectToEdit?.beforeAfter?.afterImage || '');
-  const [beforeNotes, setBeforeNotes] = useState(projectToEdit?.beforeAfter?.beforeNotes || '기존: 산만한 정보 배치 및 모바일 가독성 저하');
-  const [afterNotes, setAfterNotes] = useState(projectToEdit?.beforeAfter?.afterNotes || '개선 후: 에디토리얼 레이아웃과 데이터 시각화로 전환율 극대화');
-
   // Other metadata
   const [tagsStr, setTagsStr] = useState(projectToEdit?.tags.join(', ') || '상세페이지, 이커머스, 전환율 +120%');
-  const [metricValue, setMetricValue] = useState(projectToEdit?.impactMetric?.value || '+148%');
-  const [metricLabel, setMetricLabel] = useState(projectToEdit?.impactMetric?.label || '구매 전환율 (CVR)');
-  const [metricDetail, setMetricDetail] = useState(projectToEdit?.impactMetric?.detail || '동일 카테고리 대비 성과 급증');
   const [overview, setOverview] = useState(projectToEdit?.overview || '');
   const [strategy, setStrategy] = useState(projectToEdit?.strategy || '');
   const [concept, setConcept] = useState(projectToEdit?.concept || '');
-  const [deliverablesStr, setDeliverablesStr] = useState(
-    projectToEdit?.deliverables.join('\n') || '풀사이즈 상세페이지 (PC/Mobile)\n메인 배너 세트'
-  );
   const [toolsStr, setToolsStr] = useState(projectToEdit?.tools.join(', ') || 'Figma, Photoshop, Illustrator');
   const [featured, setFeatured] = useState(projectToEdit?.featured || false);
 
@@ -80,8 +82,10 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
   const [isProcessingFiles, setIsProcessingFiles] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const beforeFileInputRef = useRef<HTMLInputElement>(null);
-  const afterFileInputRef = useRef<HTMLInputElement>(null);
+
+  // 기존 업로드 자료 복사(가져오기) 상태
+  const [isCopyPanelOpen, setIsCopyPanelOpen] = useState(false);
+  const [copySourceId, setCopySourceId] = useState<string>('');
 
   // Preset images for fast testing
   const presetImages = [
@@ -174,33 +178,40 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
     });
   };
 
-  // Upload Before Image
-  const handleBeforeFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const dataUrl = await processImageFile(file);
-      setBeforeImage(dataUrl);
-    }
-  };
+  // 기존 업로드 자료 복사(가져오기)
+  const copySourceProject = projects.find((p) => p.id === copySourceId) || null;
 
-  // Upload After Image
-  const handleAfterFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const dataUrl = await processImageFile(file);
-      setAfterImage(dataUrl);
-    }
+  const handleCopyMediaFrom = (sourceId: string) => {
+    const source = projects.find((p) => p.id === sourceId);
+    if (!source) return;
+    const sourceMedia: MediaItem[] =
+      source.gallery && source.gallery.length > 0
+        ? source.gallery
+        : [{ id: 'src-0', type: 'image', url: source.image, name: source.title, isCover: true }];
+
+    const cloned: MediaItem[] = sourceMedia.map((m, i) => ({
+      ...m,
+      id: `copied-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 7)}`,
+      isCover: false,
+    }));
+
+    setGallery((prev) => {
+      const updated = [...prev, ...cloned];
+      if (!updated.some((m) => m.isCover)) {
+        updated[0].isCover = true;
+        setCoverImage(updated[0].url);
+      }
+      return updated;
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    let categoryLabel = '01. WEB DESIGN';
-    if (category === 'promotion') categoryLabel = '02. PROMOTION DESIGN';
-    if (category === 'video') categoryLabel = '03. VIDEO DESIGN';
+    const matchedCategory = categories.find((c) => c.key === category);
+    const categoryLabel = matchedCategory?.label || category.toUpperCase();
 
     const tags = tagsStr.split(',').map((t) => t.trim()).filter(Boolean);
-    const deliverables = deliverablesStr.split('\n').map((d) => d.trim()).filter(Boolean);
     const tools = toolsStr.split(',').map((t) => t.trim()).filter(Boolean);
 
     // Primary cover image fallback
@@ -212,12 +223,10 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
 
     onSave({
       title: title.trim(),
-      subtitle: subtitle.trim(),
       category,
       categoryLabel,
       client: client.trim(),
       year: year.trim(),
-      summary: summary.trim(),
       image: finalCoverUrl,
       gallery: gallery.length > 0 ? gallery : [
         {
@@ -230,24 +239,12 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
       ],
       videoPreviewUrl: videoItem ? videoItem.url : undefined,
       tags: tags.length ? tags : ['디자인', '브랜드'],
-      impactMetric: {
-        value: metricValue.trim(),
-        label: metricLabel.trim(),
-        detail: metricDetail.trim(),
-      },
       overview: overview.trim() || '신규 프로젝트 개요입니다.',
       strategy: strategy.trim() || '목적에 부합하는 시각적 계층 구조 설계.',
       concept: concept.trim() || 'Editorial Modernism',
       scope: ['기획', '디자인', '검수'],
-      deliverables: deliverables.length ? deliverables : ['최종 결과물 소스'],
       tools: tools.length ? tools : ['Figma'],
       featured,
-      beforeAfter: hasBeforeAfter && beforeImage && afterImage ? {
-        beforeImage,
-        afterImage,
-        beforeNotes,
-        afterNotes,
-      } : undefined,
     });
 
     onClose();
@@ -444,6 +441,95 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
                 </button>
               ))}
             </div>
+
+            {/* 기 존 업로드 자료 복사 (Copy from existing project) */}
+            <div className="pt-3 border-t border-zinc-850 space-y-2.5">
+              <button
+                type="button"
+                onClick={() => setIsCopyPanelOpen(!isCopyPanelOpen)}
+                className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-xs font-semibold text-zinc-300 hover:text-white transition-colors cursor-pointer"
+              >
+                <span className="flex items-center gap-1.5">
+                  <Copy className="w-3.5 h-3.5 text-blue-400" />
+                  <span>기존 업로드 자료 복사해서 가져오기</span>
+                </span>
+                <span className="text-[11px] text-zinc-500">
+                  {isCopyPanelOpen ? '접기 ▲' : '펼치기 ▼'}
+                </span>
+              </button>
+
+              {isCopyPanelOpen && (
+                <div className="p-3 rounded-lg bg-zinc-900/50 border border-zinc-800 space-y-2.5">
+                  {projects.length === 0 ? (
+                    <p className="text-[11px] text-zinc-500 text-center py-2">
+                      복사할 기존 프로젝트가 없습니다.
+                    </p>
+                  ) : (
+                    <>
+                      <div className="space-y-1">
+                        <label className="text-[11px] text-zinc-400">복사할 원본 프로젝트 선택</label>
+                        <select
+                          value={copySourceId}
+                          onChange={(e) => setCopySourceId(e.target.value)}
+                          className="w-full px-3 py-1.5 rounded-lg bg-zinc-950 border border-zinc-700 text-xs text-white focus:outline-none focus:border-blue-500"
+                        >
+                          <option value="">— 프로젝트를 선택하세요 —</option>
+                          {projects.map((p) => {
+                            const cnt = p.gallery?.length || 1;
+                            return (
+                              <option key={p.id} value={p.id}>
+                                {p.title} · {p.categoryLabel} ({cnt}개 미디어)
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </div>
+
+                      {copySourceProject && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-zinc-400">
+                              가져올 미디어:{' '}
+                              <strong className="text-blue-400">
+                                {(copySourceProject.gallery?.length || 0) > 0 ? copySourceProject.gallery!.length : 1}개
+                              </strong>
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleCopyMediaFrom(copySourceProject.id)}
+                              className="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold rounded transition-colors cursor-pointer"
+                            >
+                              이 미디어 전체 복사
+                            </button>
+                          </div>
+                          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                            {(copySourceProject.gallery && copySourceProject.gallery.length > 0
+                              ? copySourceProject.gallery
+                              : [{ id: 'preview', type: 'image' as const, url: copySourceProject.image, name: copySourceProject.title }]
+                            ).map((m, i) => (
+                              <div
+                                key={i}
+                                className="relative w-16 h-12 shrink-0 rounded overflow-hidden border border-zinc-700 bg-black"
+                              >
+                                {m.type === 'video' ? (
+                                  <video src={m.url} className="w-full h-full object-cover" muted />
+                                ) : (
+                                  <img src={m.url} alt={m.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <p className="text-[10px] text-zinc-500 leading-relaxed">
+                        ※ 복사된 미디어는 현재 프로젝트의 갤러리에 추가되며, 원본 프로젝트에는 영향이 없습니다.
+                      </p>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* SECTION 2: Project Basic Info */}
@@ -467,23 +553,17 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
                 onChange={(e) => setCategory(e.target.value as ProjectCategory)}
                 className="w-full px-3.5 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-white focus:outline-none focus:border-blue-500"
               >
-                <option value="web">01. WEB DESIGN (웹/상세페이지)</option>
-                <option value="promotion">02. PROMOTION DESIGN (프로모션/배너)</option>
-                <option value="video">03. VIDEO DESIGN (숏폼/영상)</option>
+                {categories.map((c) => (
+                  <option key={c.key} value={c.key}>
+                    {c.label}
+                    {c.desc ? ` (${c.desc})` : ''}
+                  </option>
+                ))}
               </select>
+              <p className="text-[11px] text-zinc-500">
+                카테고리 목록은 [메뉴 & 카테고리 관리] 탭에서 추가·수정할 수 있습니다.
+              </p>
             </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-zinc-300">부제목 (한 줄 핵심 설명)</label>
-            <input
-              type="text"
-              value={subtitle}
-              onChange={(e) => setSubtitle(e.target.value)}
-              placeholder="예: 프리미엄 보태니컬 세럼 론칭 상세페이지 & 커머스 UI"
-              className="w-full px-3.5 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-white focus:outline-none focus:border-blue-500"
-              required
-            />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -511,138 +591,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
             </div>
           </div>
 
-          {/* SECTION 3: Impact Metric */}
-          <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800 space-y-3">
-            <span className="text-xs font-bold text-blue-400">성과 지표 (Impact Metric)</span>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="space-y-1">
-                <label className="text-[11px] text-zinc-400">수치 (Value)</label>
-                <input
-                  type="text"
-                  value={metricValue}
-                  onChange={(e) => setMetricValue(e.target.value)}
-                  placeholder="+148%"
-                  className="w-full px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 text-xs text-white"
-                  required
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[11px] text-zinc-400">지표명 (Label)</label>
-                <input
-                  type="text"
-                  value={metricLabel}
-                  onChange={(e) => setMetricLabel(e.target.value)}
-                  placeholder="구매 전환율"
-                  className="w-full px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 text-xs text-white"
-                  required
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[11px] text-zinc-400">세부 설명 (Detail)</label>
-                <input
-                  type="text"
-                  value={metricDetail}
-                  onChange={(e) => setMetricDetail(e.target.value)}
-                  placeholder="카테고리 평균 대비 성과"
-                  className="w-full px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 text-xs text-white"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* SECTION 4: Before & After Upload (Optional) */}
-          <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800 space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={hasBeforeAfter}
-                  onChange={(e) => setHasBeforeAfter(e.target.checked)}
-                  className="rounded border-zinc-700 bg-zinc-900 text-blue-600 focus:ring-0"
-                />
-                <span className="text-xs font-bold text-zinc-200">Before & After 비교 슬라이더 포함</span>
-              </label>
-              <span className="text-[11px] text-zinc-500">개선 전후를 드래그 슬라이더로 보여줍니다</span>
-            </div>
-
-            {hasBeforeAfter && (
-              <div className="space-y-3 pt-2 border-t border-zinc-850">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Before Upload */}
-                  <div className="space-y-2">
-                    <span className="text-[11px] font-semibold text-zinc-400">Before (개선 전 이미지)</span>
-                    <input
-                      ref={beforeFileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleBeforeFileSelected}
-                      className="hidden"
-                    />
-                    <div
-                      onClick={() => beforeFileInputRef.current?.click()}
-                      className="border border-dashed border-zinc-800 rounded-lg p-3 text-center cursor-pointer hover:border-zinc-700 bg-zinc-900/40"
-                    >
-                      {beforeImage ? (
-                        <img src={beforeImage} alt="Before" className="h-20 w-auto mx-auto rounded object-cover" />
-                      ) : (
-                        <div className="text-[11px] text-zinc-400 py-2">클릭하여 Before 이미지 업로드</div>
-                      )}
-                    </div>
-                    <input
-                      type="text"
-                      value={beforeNotes}
-                      onChange={(e) => setBeforeNotes(e.target.value)}
-                      placeholder="개선 전 문제점 메모"
-                      className="w-full px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-[11px] text-zinc-300"
-                    />
-                  </div>
-
-                  {/* After Upload */}
-                  <div className="space-y-2">
-                    <span className="text-[11px] font-semibold text-blue-400">After (개선 후 완성 이미지)</span>
-                    <input
-                      ref={afterFileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleAfterFileSelected}
-                      className="hidden"
-                    />
-                    <div
-                      onClick={() => afterFileInputRef.current?.click()}
-                      className="border border-dashed border-blue-900/60 rounded-lg p-3 text-center cursor-pointer hover:border-blue-800 bg-blue-950/20"
-                    >
-                      {afterImage ? (
-                        <img src={afterImage} alt="After" className="h-20 w-auto mx-auto rounded object-cover" />
-                      ) : (
-                        <div className="text-[11px] text-blue-300 py-2">클릭하여 After 완성 이미지 업로드</div>
-                      )}
-                    </div>
-                    <input
-                      type="text"
-                      value={afterNotes}
-                      onChange={(e) => setAfterNotes(e.target.value)}
-                      placeholder="개선 후 디자인 솔루션 메모"
-                      className="w-full px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-[11px] text-zinc-300"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* SECTION 5: Summary, Overview, Strategy */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-zinc-300">요약 설명 (카드 노출용)</label>
-            <textarea
-              rows={2}
-              value={summary}
-              onChange={(e) => setSummary(e.target.value)}
-              placeholder="프로젝트의 주요 내용과 핵심 성과를 2줄 내외로 기술하세요."
-              className="w-full px-3.5 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-white focus:outline-none focus:border-blue-500"
-              required
-            />
-          </div>
-
+          {/* SECTION 5: Overview, Strategy */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-zinc-300">프로젝트 개요 (Overview)</label>
@@ -689,17 +638,6 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
                 className="w-full px-3.5 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-white focus:outline-none focus:border-blue-500"
               />
             </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-zinc-300">산출물 목록 (줄바꿈으로 구분)</label>
-            <textarea
-              rows={2}
-              value={deliverablesStr}
-              onChange={(e) => setDeliverablesStr(e.target.value)}
-              placeholder="상세페이지 PC/Mobile&#10;SNS 배너 5종"
-              className="w-full px-3.5 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-white focus:outline-none focus:border-blue-500"
-            />
           </div>
 
           {/* Submit Action */}

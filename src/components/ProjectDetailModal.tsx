@@ -138,11 +138,15 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project,
                 <Calendar className="w-3.5 h-3.5 text-zinc-500" />
                 <span>제작 연도: <strong className="text-zinc-200">{project.year}</strong></span>
               </div>
-              <span className="text-zinc-700">·</span>
-              <div className="flex items-center gap-1.5">
-                <TrendingUp className="w-3.5 h-3.5 text-blue-400" />
-                <span>성과 지표: <strong className="text-blue-400">{project.impactMetric.value} ({project.impactMetric.label})</strong></span>
-              </div>
+              {project.impactMetric && (
+                <>
+                  <span className="text-zinc-700">·</span>
+                  <div className="flex items-center gap-1.5">
+                    <TrendingUp className="w-3.5 h-3.5 text-blue-400" />
+                    <span>성과 지표: <strong className="text-blue-400">{project.impactMetric.value} ({project.impactMetric.label})</strong></span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
@@ -288,35 +292,39 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project,
             </div>
 
             {/* 03. Impact & Results */}
-            <div className="p-6 rounded-2xl bg-blue-950/20 border border-blue-900/40 space-y-3">
-              <div className="text-xs font-mono font-semibold text-blue-400">03. RESULTS & IMPACT</div>
-              <h4 className="text-base font-bold text-white">입증된 성과 및 데이터</h4>
-              <div className="space-y-2">
-                <div className="text-3xl font-extrabold text-blue-400 font-display tabular-nums">
-                  {project.impactMetric.value}
+            {project.impactMetric && (
+              <div className="p-6 rounded-2xl bg-blue-950/20 border border-blue-900/40 space-y-3">
+                <div className="text-xs font-mono font-semibold text-blue-400">03. RESULTS & IMPACT</div>
+                <h4 className="text-base font-bold text-white">입증된 성과 및 데이터</h4>
+                <div className="space-y-2">
+                  <div className="text-3xl font-extrabold text-blue-400 font-display tabular-nums">
+                    {project.impactMetric.value}
+                  </div>
+                  <div className="text-xs font-semibold text-zinc-200">{project.impactMetric.label}</div>
+                  <p className="text-xs text-zinc-400 leading-relaxed">{project.impactMetric.detail}</p>
                 </div>
-                <div className="text-xs font-semibold text-zinc-200">{project.impactMetric.label}</div>
-                <p className="text-xs text-zinc-400 leading-relaxed">{project.impactMetric.detail}</p>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Deliverables & Tools */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-zinc-850">
-            <div className="space-y-4">
-              <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                <Layers className="w-4 h-4 text-blue-400" />
-                <span>제공 작업 범위 & 최종 산출물</span>
-              </h4>
-              <div className="space-y-2">
-                {project.deliverables.map((d, i) => (
-                  <div key={i} className="flex items-start gap-2 text-xs text-zinc-300">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-blue-400 mt-0.5 shrink-0" />
-                    <span>{d}</span>
-                  </div>
-                ))}
+            {project.deliverables && project.deliverables.length > 0 && (
+              <div className="space-y-4">
+                <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-blue-400" />
+                  <span>제공 작업 범위 & 최종 산출물</span>
+                </h4>
+                <div className="space-y-2">
+                  {project.deliverables.map((d, i) => (
+                    <div key={i} className="flex items-start gap-2 text-xs text-zinc-300">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-blue-400 mt-0.5 shrink-0" />
+                      <span>{d}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="space-y-4">
               <h4 className="text-sm font-bold text-white flex items-center gap-2">

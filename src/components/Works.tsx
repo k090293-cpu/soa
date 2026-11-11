@@ -102,11 +102,15 @@ export const Works: React.FC = () => {
 
                 {/* Bottom Impact Metric Tag on Image */}
                 <div className="absolute bottom-3.5 left-3.5 right-3.5 flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-1.5 text-blue-400 bg-black/80 backdrop-blur-md px-2.5 py-1 rounded-md border border-blue-500/30">
-                    <TrendingUp className="w-3.5 h-3.5" />
-                    <span className="font-bold">{project.impactMetric.value}</span>
-                    <span className="text-zinc-400 text-[11px]">({project.impactMetric.label})</span>
-                  </div>
+                  {project.impactMetric ? (
+                    <div className="flex items-center gap-1.5 text-blue-400 bg-black/80 backdrop-blur-md px-2.5 py-1 rounded-md border border-blue-500/30">
+                      <TrendingUp className="w-3.5 h-3.5" />
+                      <span className="font-bold">{project.impactMetric.value}</span>
+                      <span className="text-zinc-400 text-[11px]">({project.impactMetric.label})</span>
+                    </div>
+                  ) : (
+                    <span />
+                  )}
                   <span className="text-zinc-400 text-[11px] font-mono">{project.year}</span>
                 </div>
               </div>
@@ -119,7 +123,7 @@ export const Works: React.FC = () => {
                     {project.title}
                   </h3>
                   <p className="text-xs text-zinc-400 line-clamp-2 leading-relaxed">
-                    {project.summary}
+                    {project.summary || project.strategy}
                   </p>
                 </div>
 
