@@ -66,6 +66,11 @@ interface StudioContextType {
   updateProject: (id: string, updated: Partial<Project>) => void;
   deleteProject: (id: string) => void;
   resetProjectsToDefault: () => void;
+  // 포트폴리오 백업 / 복원
+  backupProjects: () => { ok: boolean; savedAt?: string; error?: string };
+  restoreProjectsFromBackup: () => boolean;
+  deleteBackup: () => void;
+  backupInfo: { savedAt: string; count: number } | null;
   addInquiry: (inquiryData: Omit<ProjectInquiry, 'id' | 'createdAt' | 'status'>) => void;
   updateInquiryStatus: (id: string, status: InquiryStatus, adminNote?: string) => void;
   deleteInquiry: (id: string) => void;
@@ -81,10 +86,18 @@ const StudioContext = createContext<StudioContextType | undefined>(undefined);
 
 const STORAGE_KEYS = {
   PROJECTS: 'soa_studio_projects_v2',
+  PROJECTS_BACKUP: 'soa_studio_projects_backup_v1',
   INQUIRIES: 'soa_studio_inquiries_v2',
   CONFIG: 'soa_studio_config_v2',
   MENU_CONTENT: 'soa_menu_content_v2',
   ADMIN_SESSION: 'soa_studio_admin_session_v2',
+};
+
+/** 현재 시각을 'YYYY-MM-DD HH:mm' 형식으로 반환 */
+const formatNow = () => {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
 };
 
 export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -283,6 +296,67 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const resetProjectsToDefault = () => {
     setProjects(INITIAL_PROJECTS);
+  };
+
+  // ── 포트폴리오 백업 / 복원 ──────────────────────────────────────────
+  // 백업 정보는 저장 시각과 당시 프로젝트 수를 함께 보관합니다.
+  const [backupInfo, setBackupInfo] = useState<{ savedAt: string; count: number } | null>(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEYS.PROJECTS_BACKUP);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (parsed && Array.isArray(parsed.projects)) {
+        return { savedAt: parsed.savedAt, count: parsed.projects.length };
+      }
+    } catch (e) {
+      console.warn('Failed to read backup info', e);
+    }
+    return null;
+  });
+
+  /** 현재 포트폴리오를 브라우저에 백업합니다. (한 개의 최신 백업만 유지) */
+  const backupProjects = (): { ok: boolean; savedAt?: string; error?: string } => {
+    try {
+      const savedAt = formatNow();
+      localStorage.setItem(
+        STORAGE_KEYS.PROJECTS_BACKUP,
+        JSON.stringify({ savedAt, savedTs: Date.now(), projects })
+      );
+      setBackupInfo({ savedAt, count: projects.length });
+      return { ok: true, savedAt };
+    } catch (e) {
+      console.error('Failed to create backup', e);
+      return {
+        ok: false,
+        error: '저장 공간이 부족하여 백업에 실패했습니다. 미디어 용량이 큰 경우 일부를 정리한 뒤 다시 시도해 주세요.',
+      };
+    }
+  };
+
+  /** 마지막 백업 시점의 포트폴리오로 되돌립니다. */
+  const restoreProjectsFromBackup = (): boolean => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEYS.PROJECTS_BACKUP);
+      if (!raw) return false;
+      const parsed = JSON.parse(raw);
+      if (!parsed || !Array.isArray(parsed.projects)) return false;
+      setProjects(parsed.projects);
+      setActiveProjectDetail(null);
+      return true;
+    } catch (e) {
+      console.error('Failed to restore backup', e);
+      return false;
+    }
+  };
+
+  /** 저장된 백업을 삭제합니다. */
+  const deleteBackup = () => {
+    try {
+      localStorage.removeItem(STORAGE_KEYS.PROJECTS_BACKUP);
+    } catch (e) {
+      console.error('Failed to delete backup', e);
+    }
+    setBackupInfo(null);
   };
 
   // Inquiry operations
@@ -588,6 +662,10 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         updateProject,
         deleteProject,
         resetProjectsToDefault,
+        backupProjects,
+        restoreProjectsFromBackup,
+        deleteBackup,
+        backupInfo,
         addInquiry,
         updateInquiryStatus,
         deleteInquiry,

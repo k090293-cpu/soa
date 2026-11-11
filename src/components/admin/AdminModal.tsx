@@ -28,7 +28,9 @@ import {
   Columns,
   Maximize2,
   Eye,
-  Layers
+  Layers,
+  Save,
+  History
 } from 'lucide-react';
 
 export const AdminModal: React.FC = () => {
@@ -46,6 +48,10 @@ export const AdminModal: React.FC = () => {
     updateProject,
     deleteProject,
     resetProjectsToDefault,
+    backupProjects,
+    restoreProjectsFromBackup,
+    deleteBackup,
+    backupInfo,
     updateInquiryStatus,
     deleteInquiry,
     updateConfig,
@@ -103,6 +109,43 @@ export const AdminModal: React.FC = () => {
 
   // Copy contact feedback
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // 포트폴리오 백업/복원 피드백
+  const [backupFeedback, setBackupFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+
+  const notifyBackup = (type: 'success' | 'error', msg: string) => {
+    setBackupFeedback({ type, msg });
+    setTimeout(() => setBackupFeedback(null), 4000);
+  };
+
+  const handleBackup = () => {
+    const res = backupProjects();
+    if (res.ok) {
+      notifyBackup('success', `백업 완료 · ${res.savedAt} 시점의 포트폴리오 ${projects.length}개를 저장했습니다.`);
+    } else {
+      notifyBackup('error', res.error || '백업에 실패했습니다.');
+    }
+  };
+
+  const handleRestore = () => {
+    if (!backupInfo) return;
+    const ok = confirm(
+      `마지막 백업(${backupInfo.savedAt}, ${backupInfo.count}개) 시점으로 되돌리시겠습니까?\n\n현재 포트폴리오의 변경 사항은 사라집니다.`
+    );
+    if (!ok) return;
+    if (restoreProjectsFromBackup()) {
+      notifyBackup('success', `백업 시점(${backupInfo.savedAt})의 포트폴리오 ${backupInfo.count}개로 복원했습니다.`);
+    } else {
+      notifyBackup('error', '복원에 실패했습니다. 백업 데이터를 찾을 수 없습니다.');
+    }
+  };
+
+  const handleDeleteBackup = () => {
+    if (!backupInfo) return;
+    if (!confirm(`저장된 백업(${backupInfo.savedAt})을 삭제하시겠습니까?`)) return;
+    deleteBackup();
+    notifyBackup('success', '백업이 삭제되었습니다.');
+  };
 
   if (!isAdminModalOpen) return null;
 
@@ -356,7 +399,7 @@ export const AdminModal: React.FC = () => {
                 </div>
 
                 {activeTab === 'projects' && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <button
                       onClick={handleOpenAddProject}
                       className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
@@ -364,9 +407,36 @@ export const AdminModal: React.FC = () => {
                       <Plus className="w-3.5 h-3.5" />
                       <span>새 프로젝트 등록</span>
                     </button>
+
+                    <button
+                      onClick={handleBackup}
+                      className="px-3 py-1.5 bg-emerald-950/60 hover:bg-emerald-900/70 text-emerald-300 border border-emerald-800/80 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                      title="현재 포트폴리오 상태를 백업합니다"
+                    >
+                      <Save className="w-3.5 h-3.5" />
+                      <span>백업</span>
+                    </button>
+
+                    <button
+                      onClick={handleRestore}
+                      disabled={!backupInfo}
+                      className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                      title={
+                        backupInfo
+                          ? `마지막 백업(${backupInfo.savedAt}) 시점으로 복원합니다`
+                          : '저장된 백업이 없습니다. 먼저 [백업]을 눌러 주세요.'
+                      }
+                    >
+                      <History className="w-3.5 h-3.5" />
+                      <span>복원</span>
+                    </button>
+
                     <button
                       onClick={() => {
-                        if (confirm('모든 포트폴리오를 초기 대표 프로젝트 목록으로 초기화하시겠습니까?')) {
+                        const extra = backupInfo
+                          ? `\n\n초기화 후 [복원] 버튼으로 마지막 백업(${backupInfo.savedAt}) 시점으로 되돌릴 수 있습니다.`
+                          : '\n\n주의: 저장된 백업이 없어 되돌릴 수 없습니다. 먼저 [백업]을 눌러 주세요.';
+                        if (confirm(`모든 포트폴리오를 초기 대표 프로젝트 목록으로 초기화하시겠습니까?${extra}`)) {
                           resetProjectsToDefault();
                         }
                       }}
@@ -524,6 +594,50 @@ export const AdminModal: React.FC = () => {
               {/* Tab 2: Projects Management — 카테고리별 관리 */}
               {activeTab === 'projects' && (
                 <div className="space-y-4">
+                  {/* 백업 피드백 메시지 */}
+                  {backupFeedback && (
+                    <div
+                      className={`p-3 rounded-xl border text-xs flex items-center gap-2 ${
+                        backupFeedback.type === 'success'
+                          ? 'bg-emerald-950/60 border-emerald-800/80 text-emerald-300'
+                          : 'bg-red-950/60 border-red-800/80 text-red-300'
+                      }`}
+                    >
+                      {backupFeedback.type === 'success' ? (
+                        <Check className="w-4 h-4 shrink-0" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                      )}
+                      <span>{backupFeedback.msg}</span>
+                    </div>
+                  )}
+
+                  {/* 백업 상태 표시 */}
+                  <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-850 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 text-[11px]">
+                      <History className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+                      {backupInfo ? (
+                        <span className="text-zinc-400">
+                          마지막 백업:{' '}
+                          <strong className="text-zinc-200">{backupInfo.savedAt}</strong>
+                          <span className="text-zinc-500"> · {backupInfo.count}개 프로젝트</span>
+                        </span>
+                      ) : (
+                        <span className="text-zinc-500">
+                          저장된 백업이 없습니다. 초기화 전에 [백업]을 눌러 두세요.
+                        </span>
+                      )}
+                    </div>
+                    {backupInfo && (
+                      <button
+                        onClick={handleDeleteBackup}
+                        className="text-[11px] text-zinc-500 hover:text-red-400 transition-colors cursor-pointer self-start sm:self-auto shrink-0"
+                      >
+                        백업 삭제
+                      </button>
+                    )}
+                  </div>
+
                   {/* 카테고리별 필터 탭 */}
                   <div className="space-y-2.5">
                     <div className="flex items-center justify-between">
