@@ -145,6 +145,24 @@ export const AdminModal: React.FC = () => {
     setIsProjectFormOpen(true);
   };
 
+  // 프로젝트 복사 (새 프로젝트로 등록)
+  const handleDuplicateProject = (p: Project) => {
+    const { id: _omitId, ...rest } = p;
+
+    // 갤러리 미디어는 새 ID를 부여해 원본과 독립적으로 관리되도록 합니다.
+    const clonedGallery = (p.gallery || []).map((m, i) => ({
+      ...m,
+      id: `copy-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 7)}`,
+    }));
+
+    addProject({
+      ...rest,
+      title: `${p.title} (복사)`,
+      gallery: clonedGallery,
+      featured: false,
+    });
+  };
+
   const handleSaveProjectForm = (data: Omit<Project, 'id'>) => {
     if (editingProject) {
       updateProject(editingProject.id, data);
@@ -627,6 +645,13 @@ export const AdminModal: React.FC = () => {
                           </div>
 
                           <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              onClick={() => handleDuplicateProject(p)}
+                              className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                              title="복사하기 (같은 내용으로 새 프로젝트 등록)"
+                            >
+                              <Copy className="w-4 h-4" />
+                            </button>
                             <button
                               onClick={() => handleOpenEditProject(p)}
                               className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-colors cursor-pointer"
