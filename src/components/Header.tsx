@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useStudio } from '../context/StudioContext';
-import { ArrowUpRight, Lock, Menu, X, ShieldCheck } from 'lucide-react';
+import { ArrowUpRight, Lock, Menu, X, ShieldCheck, Sun, Moon } from 'lucide-react';
 
 export const Header: React.FC = () => {
   const {
@@ -9,7 +9,9 @@ export const Header: React.FC = () => {
     setIsAdminModalOpen,
     isAdminLoggedIn,
     config,
-    menuContent
+    menuContent,
+    theme,
+    toggleTheme,
   } = useStudio();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -54,7 +56,7 @@ export const Header: React.FC = () => {
       <header
         className={`sticky top-0 z-40 w-full transition-all duration-200 ${
           isScrolled
-            ? 'bg-[#0b0c10]/95 backdrop-blur-md border-b border-zinc-800 shadow-lg shadow-black/20'
+            ? 'bg-[var(--app-header-bg)] backdrop-blur-md border-b border-zinc-800 shadow-lg shadow-black/20'
             : 'bg-transparent border-b border-zinc-800/30'
         }`}
       >
@@ -93,6 +95,23 @@ export const Header: React.FC = () => {
 
           {/* Zone 3: Primary Action & Admin Lock */}
           <div className="flex items-center gap-3 shrink-0">
+            {/* Theme toggle (다크 / 화이트) */}
+            <button
+              onClick={toggleTheme}
+              title={theme === 'dark' ? '화이트 모드로 전환' : '다크 모드로 전환'}
+              aria-label={theme === 'dark' ? '화이트 모드로 전환' : '다크 모드로 전환'}
+              className="p-2 rounded-lg border border-zinc-800 hover:border-zinc-700 bg-zinc-900/60 text-zinc-400 hover:text-zinc-200 text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              {theme === 'dark' ? (
+                <Sun className="w-3.5 h-3.5 text-amber-400" />
+              ) : (
+                <Moon className="w-3.5 h-3.5 text-blue-400" />
+              )}
+              <span className="hidden lg:inline text-[11px] font-medium">
+                {theme === 'dark' ? 'Light' : 'Dark'}
+              </span>
+            </button>
+
             {/* Admin entry trigger */}
             <button
               onClick={() => setIsAdminModalOpen(true)}
@@ -129,7 +148,7 @@ export const Header: React.FC = () => {
 
         {/* Mobile Dropdown Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-b border-zinc-800 bg-[#0d0e12] px-6 py-5 space-y-3">
+          <div className="md:hidden border-b border-zinc-800 bg-[var(--app-surface-3)] px-6 py-5 space-y-3">
             {navItems.map((item) => (
               <button
                 key={item.page}

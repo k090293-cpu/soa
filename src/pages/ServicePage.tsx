@@ -57,7 +57,7 @@ export const ServicePage: React.FC = () => {
 
           <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-extrabold text-white tracking-tight leading-[1.1]">
             SERVICES & <br />
-            <span className="bg-gradient-to-r from-blue-400 via-blue-200 to-white bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-blue-500 via-blue-400 to-blue-200 bg-clip-text text-transparent">
               PRODUCTION SCOPE.
             </span>
           </h1>

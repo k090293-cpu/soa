@@ -106,7 +106,7 @@ export const Hero: React.FC = () => {
 
           {/* Right Column (5 cols on lg): Representative Studio Showcase Media Frame */}
           <div className="lg:col-span-5 relative">
-            <div className="relative rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900/60 shadow-2xl group">
+            <div data-theme="dark" className="relative rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900/60 shadow-2xl group">
               {/* Studio Desk / Multi-Monitor Image */}
               <div className="relative aspect-[4/3] w-full overflow-hidden">
                 <img

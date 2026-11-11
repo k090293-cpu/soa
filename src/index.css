@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* zinc-750 / zinc-850 은 Tailwind 기본 팔레트에 없어 클래스가 무효화되던 문제를 보완합니다. */
+@theme {
+  --color-zinc-750: oklch(32% 0.01 286);
+  --color-zinc-850: oklch(23.5% 0.006 286);
+}
+
 @layer base {
   *, *::before, *::after {
     font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif !important;
@@ -8,6 +14,9 @@
   body {
     font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif !important;
     letter-spacing: -0.02em;
+    background-color: var(--app-bg);
+    color: var(--app-fg);
+    transition: background-color 0.25s ease, color 0.25s ease;
   }
 
   button, input, select, textarea {
@@ -20,18 +29,212 @@
   letter-spacing: -0.03em;
 }
 
+/* ============================================================================
+   테마 토큰
+   - 기본(다크): 기존 디자인 그대로 유지
+   - data-theme="light": zinc 스케일과 강조색을 반전시켜 화이트 모드 제공
+   - 미디어(사진) 위 오버레이는 data-theme="dark" 로 고정해 흰 글자를 유지
+   ========================================================================== */
+
+/* ── 다크 (기본값) ───────────────────────────────────────────────────────── */
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --app-bg: #0b0c10;
+  --app-fg: #f3f4f6;
+  --app-surface: #0e0f14;
+  --app-surface-glass: rgba(14, 15, 20, 0.9);
+  --app-surface-2: #07080b;
+  --app-surface-3: #0d0e12;
+  --app-header-bg: rgba(11, 12, 16, 0.95);
+  --app-scroll-track: #0b0c10;
+  --app-scroll-thumb: #27272a;
+  --app-scroll-thumb-hover: #3f3f46;
+
+  --color-white: #ffffff;
+  --color-zinc-50: oklch(98.5% 0 0);
+  --color-zinc-100: oklch(96.7% 0.001 286.375);
+  --color-zinc-200: oklch(92% 0.004 286.32);
+  --color-zinc-300: oklch(87.1% 0.006 286.286);
+  --color-zinc-400: oklch(70.5% 0.015 286.067);
+  --color-zinc-500: oklch(55.2% 0.016 285.938);
+  --color-zinc-600: oklch(44.2% 0.017 285.786);
+  --color-zinc-700: oklch(37% 0.013 285.805);
+  --color-zinc-750: oklch(32% 0.01 286);
+  --color-zinc-800: oklch(27.4% 0.006 286.033);
+  --color-zinc-850: oklch(23.5% 0.006 286);
+  --color-zinc-900: oklch(21% 0.006 285.885);
+  --color-zinc-950: oklch(14.1% 0.005 285.823);
+
+  --color-blue-200: oklch(88.2% 0.059 254.128);
+  --color-blue-300: oklch(80.9% 0.105 251.813);
+  --color-blue-400: oklch(70.7% 0.165 254.624);
+  --color-blue-500: oklch(62.3% 0.214 259.815);
+  --color-blue-600: oklch(54.6% 0.245 262.881);
+  --color-blue-700: oklch(48.8% 0.243 264.376);
+  --color-blue-900: oklch(37.9% 0.146 265.522);
+  --color-blue-950: oklch(28.2% 0.091 267.935);
+
+  --color-emerald-300: oklch(84.5% 0.143 164.978);
+  --color-emerald-400: oklch(76.5% 0.177 163.223);
+  --color-emerald-500: oklch(69.6% 0.17 162.48);
+  --color-emerald-600: oklch(59.6% 0.145 163.225);
+  --color-emerald-900: oklch(37.8% 0.077 168.94);
+  --color-emerald-950: oklch(26.2% 0.051 172.552);
+
+  --color-amber-300: oklch(87.9% 0.169 91.605);
+  --color-amber-400: oklch(82.8% 0.189 84.429);
+  --color-amber-500: oklch(76.9% 0.188 70.08);
+  --color-amber-900: oklch(41.4% 0.112 45.904);
+  --color-amber-950: oklch(27.9% 0.077 45.635);
+
+  --color-red-300: oklch(80.8% 0.114 19.571);
+  --color-red-400: oklch(70.4% 0.191 22.216);
+  --color-red-500: oklch(63.7% 0.237 25.331);
+  --color-red-600: oklch(57.7% 0.245 27.325);
+  --color-red-900: oklch(39.6% 0.141 25.723);
+  --color-red-950: oklch(25.8% 0.092 26.042);
+
+  --color-purple-400: oklch(71.4% 0.203 305.504);
+  --color-purple-950: oklch(29.1% 0.149 302.717);
+
+  --color-yellow-400: oklch(85.2% 0.199 91.936);
+  --color-yellow-950: oklch(28.6% 0.066 53.813);
+}
+
+/* ── 라이트 (화이트 모드) ────────────────────────────────────────────────── */
+[data-theme="light"] {
+  color-scheme: light;
+
+  --app-bg: #eef0f4;
+  --app-fg: #12161f;
+  --app-surface: #ffffff;
+  --app-surface-glass: rgba(255, 255, 255, 0.92);
+  --app-surface-2: #f7f8fa;
+  --app-surface-3: #ffffff;
+  --app-header-bg: rgba(255, 255, 255, 0.88);
+  --app-scroll-track: #eef0f4;
+  --app-scroll-thumb: #c6cad2;
+  --app-scroll-thumb-hover: #a8adb8;
+
+  /* text-white / heading 색을 어두운 잉크로 반전 */
+  --color-white: oklch(19% 0.015 286);
+
+  --color-zinc-50: oklch(18% 0.012 286);
+  --color-zinc-100: oklch(22% 0.012 286);
+  --color-zinc-200: oklch(28% 0.014 286);
+  --color-zinc-300: oklch(31% 0.016 286);
+  --color-zinc-400: oklch(43% 0.016 286);
+  --color-zinc-500: oklch(50% 0.015 286);
+  --color-zinc-600: oklch(60% 0.013 286);
+  --color-zinc-700: oklch(84% 0.006 286);
+  --color-zinc-750: oklch(88% 0.005 286);
+  --color-zinc-800: oklch(90.5% 0.005 286);
+  --color-zinc-850: oklch(92.5% 0.004 286);
+  --color-zinc-900: oklch(95.2% 0.004 286);
+  --color-zinc-950: oklch(97.3% 0.003 286);
+
+  --color-blue-200: oklch(42% 0.16 258);
+  --color-blue-300: oklch(46% 0.18 258);
+  --color-blue-400: oklch(51% 0.2 259);
+  --color-blue-500: oklch(55% 0.22 260);
+  --color-blue-600: oklch(52% 0.23 263);
+  --color-blue-700: oklch(45% 0.22 264);
+  --color-blue-900: oklch(93% 0.04 260);
+  --color-blue-950: oklch(93.5% 0.042 260);
+
+  --color-emerald-300: oklch(44% 0.11 165);
+  --color-emerald-400: oklch(47% 0.13 164);
+  --color-emerald-500: oklch(50% 0.14 163);
+  --color-emerald-600: oklch(47% 0.14 163);
+  --color-emerald-900: oklch(93% 0.04 166);
+  --color-emerald-950: oklch(93.8% 0.036 166);
+
+  --color-amber-300: oklch(48% 0.11 80);
+  --color-amber-400: oklch(58% 0.13 74);
+  --color-amber-500: oklch(66% 0.15 70);
+  --color-amber-900: oklch(94% 0.04 85);
+  --color-amber-950: oklch(94.5% 0.045 85);
+
+  --color-red-300: oklch(46% 0.14 20);
+  --color-red-400: oklch(51% 0.18 22);
+  --color-red-500: oklch(55% 0.2 23);
+  --color-red-600: oklch(51% 0.21 25);
+  --color-red-900: oklch(93% 0.035 22);
+  --color-red-950: oklch(93.8% 0.034 22);
+
+  --color-purple-400: oklch(50% 0.18 305);
+  --color-purple-950: oklch(94% 0.03 303);
+
+  --color-yellow-400: oklch(58% 0.13 92);
+  --color-yellow-950: oklch(94.8% 0.048 90);
+}
+
+/* ── 솔리드 강조 버튼은 두 테마 모두 흰 글자 유지 ────────────────────────── */
+/* 사진 위 오버레이처럼 항상 어두운 배경 위에 놓이는 영역은 흰 글자 유지 */
+[data-theme="dark"] .text-white,
+[data-photo-overlay] .text-white {
+  color: #ffffff;
+}
+
 /* Custom subtle scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0b0c10;
+  background: var(--app-scroll-track);
 }
 ::-webkit-scrollbar-thumb {
-  background: #27272a;
+  background: var(--app-scroll-thumb);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+  background: var(--app-scroll-thumb-hover);
+}
+
+/* ── 라이트 모드 보정 ────────────────────────────────────────────────────── */
+/* 이 코드베이스에서 bg-white 는 항상 "실제 흰색"(점 표시, 슬라이더 핸들 등)을
+   의미합니다. --color-white 를 잉크색으로 반전시킨 영향으로 어두워지지 않도록
+   배경으로 쓰인 white 는 순수 흰색을 유지합니다. */
+[data-theme="light"] .bg-white {
+  background-color: #ffffff;
+}
+
+/* 솔리드 강조 배경 위 텍스트는 항상 흰색 (버튼 자체 + 내부 자손 모두) */
+[data-theme="light"] .bg-blue-500,
+[data-theme="light"] .bg-blue-600,
+[data-theme="light"] .bg-blue-700,
+[data-theme="light"] .bg-red-500,
+[data-theme="light"] .bg-red-600,
+[data-theme="light"] .bg-emerald-500,
+[data-theme="light"] .bg-emerald-600 {
+  --color-white: #ffffff;
+  color: #ffffff;
+}
+
+[data-theme="light"] .bg-blue-500 .text-white,
+[data-theme="light"] .bg-blue-600 .text-white,
+[data-theme="light"] .bg-blue-700 .text-white,
+[data-theme="light"] .bg-red-500 .text-white,
+[data-theme="light"] .bg-red-600 .text-white,
+[data-theme="light"] .bg-emerald-500 .text-white,
+[data-theme="light"] .bg-emerald-600 .text-white {
+  color: #ffffff;
+}
+
+/* 라이트 모드에서 어두운 배경 위에 놓이는 파생 요소 */
+[data-theme="light"] .selection\:text-white::selection {
+  color: #ffffff;
+}
+
+/* 라이트 모드: 950 배경 위에 쓰이는 800 계열 테두리는 톤을 낮춰 부드럽게 */
+[data-theme="light"] .border-blue-800,
+[data-theme="light"] .border-emerald-800,
+[data-theme="light"] .border-red-800,
+[data-theme="light"] .border-amber-800,
+[data-theme="light"] .border-purple-800,
+[data-theme="light"] .border-yellow-800 {
+  border-color: color-mix(in oklch, currentColor 22%, transparent);
 }

@@ -57,7 +57,7 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ data }) =>
         onMouseLeave={handleMouseUp}
         onMouseMove={handleMouseMove}
         onTouchMove={handleTouchMove}
-        className="relative w-full h-[360px] md:h-[460px] overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 select-none cursor-ew-resize group"
+        data-theme="dark" className="relative w-full h-[360px] md:h-[460px] overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 select-none cursor-ew-resize group"
       >
         {/* AFTER Image (Background) */}
         <div className="absolute inset-0 w-full h-full">

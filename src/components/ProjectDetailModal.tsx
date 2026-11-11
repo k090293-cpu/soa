@@ -87,11 +87,11 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project,
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 md:p-10 animate-in fade-in duration-200">
       <div
-        className="relative w-full max-w-5xl bg-[#0e0f14] border border-zinc-800 rounded-2xl md:rounded-3xl shadow-2xl overflow-hidden my-auto"
+        className="relative w-full max-w-5xl bg-[var(--app-surface)] border border-zinc-800 rounded-2xl md:rounded-3xl shadow-2xl overflow-hidden my-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Sticky Header */}
-        <div className="sticky top-0 z-30 flex items-center justify-between px-6 py-4 bg-[#0e0f14]/90 backdrop-blur-md border-b border-zinc-800">
+        <div className="sticky top-0 z-30 flex items-center justify-between px-6 py-4 bg-[var(--app-surface-glass)] backdrop-blur-md border-b border-zinc-800">
           <div className="flex items-center gap-3">
             <span className="text-xs font-semibold text-blue-400 tracking-wider">
               {project.categoryLabel}
@@ -152,7 +152,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project,
 
           {/* Primary Visual / Video Showcase Gallery */}
           <div className="space-y-4">
-            <div className="relative rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-950 flex items-center justify-center min-h-[300px] md:min-h-[460px] max-h-[580px]">
+            <div data-theme="dark" className="relative rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-950 flex items-center justify-center min-h-[300px] md:min-h-[460px] max-h-[580px]">
               {/* Media Renderer */}
               {activeMedia.type === 'video' ? (
                 <div className="w-full h-full relative flex items-center justify-center bg-black">

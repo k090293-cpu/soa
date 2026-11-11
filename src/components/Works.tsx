@@ -83,7 +83,7 @@ export const Works: React.FC = () => {
               className="group rounded-2xl overflow-hidden bg-zinc-900/40 border border-zinc-800 hover:border-zinc-700 transition-all duration-300 flex flex-col cursor-pointer hover:-translate-y-1 hover:shadow-xl hover:shadow-black/50"
             >
               {/* Media Thumbnail Container */}
-              <div className="relative aspect-[4/3] w-full overflow-hidden bg-zinc-950">
+              <div data-theme="dark" className="relative aspect-[4/3] w-full overflow-hidden bg-zinc-950">
                 <img
                   src={project.image}
                   alt={project.title}

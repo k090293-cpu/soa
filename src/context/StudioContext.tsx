@@ -14,6 +14,7 @@ import {
   WorksCategoryItem,
   AboutStrengthItem,
   HomeLayer,
+  ThemeMode,
 } from '../types';
 import { INITIAL_PROJECTS, INITIAL_INQUIRIES, INITIAL_STUDIO_CONFIG } from '../data/initialProjects';
 import {
@@ -88,6 +89,12 @@ interface StudioContextType {
   updateInquiryStatus: (id: string, status: InquiryStatus, adminNote?: string) => void;
   deleteInquiry: (id: string) => void;
   updateConfig: (updated: Partial<StudioConfig>) => void;
+  /** 현재 사이트 테마 */
+  theme: ThemeMode;
+  /** 테마 변경 (관리자 설정) */
+  setTheme: (next: ThemeMode) => void;
+  /** 다크 <-> 화이트 토글 */
+  toggleTheme: () => void;
   activeProjectDetail: Project | null;
   setActiveProjectDetail: (p: Project | null) => void;
   selectedInquiryCategory: string | null;
@@ -268,6 +275,24 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       console.error('Failed to save menu content to storage', e);
     }
   }, [menuContent]);
+
+  // 사이트 테마(다크 / 화이트) 적용 ─────────────────────────────────────────
+  const theme: ThemeMode = config.theme === 'light' ? 'light' : 'dark';
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.setAttribute('data-theme', theme);
+    root.style.colorScheme = theme;
+    root.style.backgroundColor = theme === 'light' ? '#eef0f4' : '#0b0c10';
+  }, [theme]);
+
+  const setTheme = (next: ThemeMode) => {
+    setConfig((prev) => ({ ...prev, theme: next }));
+  };
+
+  const toggleTheme = () => {
+    setTheme(theme === 'dark' ? 'light' : 'dark');
+  };
 
   // Admin Login
   const loginAdmin = (password: string): boolean => {
@@ -746,6 +771,9 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         updateInquiryStatus,
         deleteInquiry,
         updateConfig,
+        theme,
+        setTheme,
+        toggleTheme,
         activeProjectDetail,
         setActiveProjectDetail,
         selectedInquiryCategory,

@@ -1,5 +1,8 @@
 export type NavPage = 'home' | 'about' | 'works' | 'service' | 'contact';
 
+/** 사이트 테마 모드: 다크 / 화이트 */
+export type ThemeMode = 'dark' | 'light';
+
 // 카테고리 키는 관리자 패널에서 자유롭게 추가/변경할 수 있으므로 문자열로 관리합니다.
 // (기본값: 'web' | 'promotion' | 'video')
 export type ProjectCategory = string;
@@ -82,6 +85,8 @@ export interface StudioConfig {
   kakao: string;
   instagram: string;
   availableFrom: string;
+  /** 사이트 테마: 'dark' | 'light' */
+  theme?: 'dark' | 'light';
 }
 
 export interface NavMenuItem {

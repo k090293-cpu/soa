@@ -31,7 +31,7 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0b0c10] text-[#f3f4f6] selection:bg-blue-600 selection:text-white flex flex-col font-sans">
+    <div className="min-h-screen bg-[var(--app-bg)] text-[var(--app-fg)] selection:bg-blue-600 selection:text-white flex flex-col font-sans">
       {/* Top Header with Menu Navigation */}
       <Header />
 

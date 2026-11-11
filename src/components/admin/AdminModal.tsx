@@ -32,7 +32,10 @@ import {
   Eye,
   Layers,
   Save,
-  History
+  History,
+  Sun,
+  Moon,
+  Palette
 } from 'lucide-react';
 
 export const AdminModal: React.FC = () => {
@@ -57,6 +60,8 @@ export const AdminModal: React.FC = () => {
     updateInquiryStatus,
     deleteInquiry,
     updateConfig,
+    theme,
+    setTheme,
     isSplitEditorOpen,
     setIsSplitEditorOpen,
   } = useStudio();
@@ -244,13 +249,13 @@ export const AdminModal: React.FC = () => {
         <div
           className={
             isSplitEditorOpen
-              ? 'pointer-events-auto relative w-full md:w-[520px] lg:w-[600px] shrink-0 h-full bg-[#0e0f14] border-l border-zinc-800 shadow-2xl overflow-hidden flex flex-col'
-              : 'relative w-full max-w-5xl bg-[#0e0f14] border border-zinc-800 rounded-2xl md:rounded-3xl shadow-2xl overflow-hidden my-auto flex flex-col'
+              ? 'pointer-events-auto relative w-full md:w-[520px] lg:w-[600px] shrink-0 h-full bg-[var(--app-surface)] border-l border-zinc-800 shadow-2xl overflow-hidden flex flex-col'
+              : 'relative w-full max-w-5xl bg-[var(--app-surface)] border border-zinc-800 rounded-2xl md:rounded-3xl shadow-2xl overflow-hidden my-auto flex flex-col'
           }
           onClick={(e) => e.stopPropagation()}
         >
           {/* Modal Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-[#0e0f14]/90 shrink-0">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-[var(--app-surface-glass)] shrink-0">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-blue-400">
                 <ShieldCheck className="w-4 h-4" />
@@ -876,7 +881,7 @@ export const AdminModal: React.FC = () => {
                   {/* Device Viewport Window Frame */}
                   <div className="p-3 sm:p-5 bg-zinc-950/70 rounded-3xl border border-zinc-850 flex justify-center overflow-x-auto min-h-[500px]">
                     <div
-                      className={`transition-all duration-300 bg-[#0b0c10] border border-zinc-800 rounded-2xl overflow-y-auto max-h-[72vh] shadow-2xl relative ${
+                      className={`transition-all duration-300 bg-[var(--app-bg)] border border-zinc-800 rounded-2xl overflow-y-auto max-h-[72vh] shadow-2xl relative ${
                         previewDevice === 'mobile'
                           ? 'w-[390px] px-2'
                           : previewDevice === 'tablet'
@@ -894,6 +899,82 @@ export const AdminModal: React.FC = () => {
               {/* Tab 3: Studio Settings */}
               {activeTab === 'settings' && (
                 <form onSubmit={handleSaveSettings} className="space-y-6 max-w-2xl">
+                  {/* ── 사이트 테마 (다크 / 화이트) ───────────────────────── */}
+                  <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Palette className="w-4 h-4 text-blue-400" />
+                      <span className="text-xs font-bold text-white">홈페이지 디자인 테마</span>
+                      <span className="text-[10px] font-mono text-zinc-500 ml-auto">
+                        {theme === 'dark' ? 'DARK MODE' : 'LIGHT MODE'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-zinc-400">
+                      사이트 전체(홈 · 서브 페이지 · 관리자 패널)의 색상 테마를 선택합니다. 변경 즉시 적용되며 자동 저장됩니다.
+                    </p>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      {/* 다크 모드 카드 */}
+                      <button
+                        type="button"
+                        onClick={() => setTheme('dark')}
+                        className={`p-3 rounded-xl border-2 text-left transition-all cursor-pointer ${
+                          theme === 'dark'
+                            ? 'border-blue-500 bg-zinc-900 shadow-lg shadow-blue-600/20'
+                            : 'border-zinc-800 bg-zinc-950 hover:border-zinc-700'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <Moon className="w-4 h-4 text-blue-400" />
+                          {theme === 'dark' && <Check className="w-4 h-4 text-blue-400" />}
+                        </div>
+                        {/* 미리보기 스와치 */}
+                        <div className="rounded-lg overflow-hidden border border-zinc-700 mb-2">
+                          <div className="h-8 bg-[#0b0c10] flex items-center px-2 gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                            <span className="h-1 w-6 rounded bg-zinc-600" />
+                          </div>
+                          <div className="h-5 bg-[#0e0f14] px-2 flex items-center">
+                            <span className="h-1 w-10 rounded bg-zinc-700" />
+                          </div>
+                        </div>
+                        <div className="text-xs font-bold text-white">다크 모드</div>
+                        <div className="text-[10px] text-zinc-500">기본 블랙 테마</div>
+                      </button>
+
+                      {/* 화이트 모드 카드 */}
+                      <button
+                        type="button"
+                        onClick={() => setTheme('light')}
+                        className={`p-3 rounded-xl border-2 text-left transition-all cursor-pointer ${
+                          theme === 'light'
+                            ? 'border-blue-500 bg-zinc-900 shadow-lg shadow-blue-600/20'
+                            : 'border-zinc-800 bg-zinc-950 hover:border-zinc-700'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <Sun className="w-4 h-4 text-amber-400" />
+                          {theme === 'light' && <Check className="w-4 h-4 text-blue-400" />}
+                        </div>
+                        {/* 미리보기 스와치 */}
+                        <div className="rounded-lg overflow-hidden border border-zinc-700 mb-2">
+                          <div className="h-8 bg-[#eef0f4] flex items-center px-2 gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                            <span className="h-1 w-6 rounded bg-zinc-500" />
+                          </div>
+                          <div className="h-5 bg-white px-2 flex items-center">
+                            <span className="h-1 w-10 rounded bg-zinc-300" />
+                          </div>
+                        </div>
+                        <div className="text-xs font-bold text-white">화이트 모드</div>
+                        <div className="text-[10px] text-zinc-500">밝은 라이트 테마</div>
+                      </button>
+                    </div>
+
+                    <p className="text-[10px] text-zinc-500 leading-relaxed">
+                      ※ 사진 위에 겹치는 배지·버튼 영역은 가독성을 위해 두 테마 모두 어두운 배경을 유지합니다.
+                    </p>
+                  </div>
+
                   {settingsSaved && (
                     <div className="p-3 rounded-xl bg-emerald-950/60 border border-emerald-800/80 text-xs text-emerald-300 flex items-center gap-2">
                       <Check className="w-4 h-4" />

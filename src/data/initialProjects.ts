@@ -8,6 +8,7 @@ export const INITIAL_STUDIO_CONFIG: StudioConfig = {
   kakao: 'portfolio_soa',
   instagram: '@portfolio_so.a',
   availableFrom: '즉시 착수 가능 (협의)',
+  theme: 'dark',
 };
 
 export const INITIAL_PROJECTS: Project[] = [

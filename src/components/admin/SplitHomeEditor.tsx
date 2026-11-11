@@ -22,9 +22,9 @@ export const SplitHomeEditor: React.FC = () => {
   const layerCount = (menuContent.home.layers || []).length;
 
   return (
-    <div className="flex-1 min-w-0 h-full flex flex-col bg-[#08090c]">
+    <div className="flex-1 min-w-0 h-full flex flex-col bg-[var(--app-surface-2)]">
       {/* 상단 편집 툴바 */}
-      <div className="shrink-0 flex flex-wrap items-center justify-between gap-2 px-3 py-2 border-b border-zinc-800 bg-[#0b0c10]/95 backdrop-blur">
+      <div className="shrink-0 flex flex-wrap items-center justify-between gap-2 px-3 py-2 border-b border-zinc-800 bg-[var(--app-header-bg)] backdrop-blur">
         <div className="flex items-center gap-2 min-w-0">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
           <span className="text-[11px] font-bold text-white truncate">
@@ -82,7 +82,7 @@ export const SplitHomeEditor: React.FC = () => {
       {/* 실제 홈 렌더 영역 */}
       <div
         ref={scrollerRef}
-        className="relative flex-1 overflow-y-auto overflow-x-hidden bg-[#0b0c10]"
+        className="relative flex-1 overflow-y-auto overflow-x-hidden bg-[var(--app-bg)]"
       >
         {/* HomePage 내부에서 HomeLayersOverlay 를 함께 렌더합니다 */}
         <div className="relative min-h-full">

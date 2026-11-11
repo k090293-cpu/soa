@@ -61,7 +61,7 @@ export const WorksPage: React.FC = () => {
 
           <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-extrabold text-white tracking-tight leading-[1.1]">
             PORTFOLIO & <br />
-            <span className="bg-gradient-to-r from-blue-400 via-blue-200 to-white bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-blue-500 via-blue-400 to-blue-200 bg-clip-text text-transparent">
               CASE STUDIES.
             </span>
           </h1>
@@ -136,7 +136,7 @@ export const WorksPage: React.FC = () => {
                 className="group rounded-2xl overflow-hidden bg-zinc-900/40 border border-zinc-800 hover:border-zinc-700 transition-all duration-300 flex flex-col cursor-pointer hover:-translate-y-1 hover:shadow-xl hover:shadow-black/50"
               >
                 {/* Media Thumbnail Container */}
-                <div className="relative aspect-[4/3] w-full overflow-hidden bg-zinc-950">
+                <div data-theme="dark" className="relative aspect-[4/3] w-full overflow-hidden bg-zinc-950">
                   <img
                     src={project.image}
                     alt={project.title}

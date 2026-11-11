@@ -253,10 +253,10 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-150">
       <div
-        className="relative w-full max-w-4xl bg-[#0e0f14] border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden my-auto"
+        className="relative w-full max-w-4xl bg-[var(--app-surface)] border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden my-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-[#0e0f14]/90">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-[var(--app-surface-glass)]">
           <div>
             <h3 className="text-base font-bold text-white">
               {projectToEdit ? '포트폴리오 프로젝트 수정' : '새 포트폴리오 프로젝트 등록'}
