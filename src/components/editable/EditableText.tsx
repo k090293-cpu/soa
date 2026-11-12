@@ -142,7 +142,8 @@ export const EditableText: React.FC<EditableTextProps> = ({
       style={style}
       contentEditable={isEditing}
       suppressContentEditableWarning
-      data-editable={`home:${label}`}
+      // 방문자 화면에는 편집 흔적을 남기지 않습니다.
+      {...(isHomeInlineEditMode ? { 'data-editable': `home:${label}` } : {})}
       onClick={isHomeInlineEditMode && !isEditing ? startEditing : undefined}
       onBlur={isEditing ? commit : undefined}
       onKeyDown={

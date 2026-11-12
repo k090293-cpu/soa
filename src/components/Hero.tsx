@@ -3,9 +3,14 @@ import { useStudio } from '../context/StudioContext';
 import { ArrowDown, ArrowUpRight, CheckCircle2, TrendingUp } from 'lucide-react';
 import { TRUST_STATS } from '../data/servicesData';
 import { EditableText } from './editable/EditableText';
+import { SiteText } from './editable/SiteText';
+import { SiteImage } from './editable/SiteImage';
 import { HomeBlockShell } from './editable/HomeBlockShell';
 import { useBlockDrag } from '../hooks/useBlockDrag';
 import { HOME_BLOCK_LABELS } from '../utils/homeBlocks';
+
+const CAPABILITY_FALLBACK = ['01. WEB DESIGN', '02. PROMOTION DESIGN', '03. VIDEO & SHORT-FORM'];
+const HERO_TRUST_FALLBACK = ['마감 일정 100% 엄수', '기획부터 영상까지 올인원', '세금계산서 발행 가능'];
 
 export const Hero: React.FC = () => {
   const {
@@ -25,6 +30,8 @@ export const Hero: React.FC = () => {
     moveHomeKpi,
     undoHomeEdit,
     canUndo,
+    siteText,
+    setSiteText,
   } = useStudio();
 
   const featuredProject = projects[0];
@@ -80,6 +87,12 @@ export const Hero: React.FC = () => {
         .filter((_, i) => i !== idx)
         .map((k) => ({ value: k.value, label: k.label, sub: k.sub })),
     });
+  };
+
+  // 편집 모드에서는 링크 이동을 막습니다 (문구 수정 클릭이 페이지 이동으로 이어지지 않도록)
+  const guardNav = (fn: () => void) => () => {
+    if (isHomeInlineEditMode) return;
+    fn();
   };
 
   const shellPropsFor = (key: string) => {
@@ -157,10 +170,15 @@ export const Hero: React.FC = () => {
             <div className="flex flex-wrap items-center gap-y-2 gap-x-3 text-xs text-zinc-400 pt-1">
               {(homeData.capabilities && homeData.capabilities.length > 0
                 ? homeData.capabilities
-                : ['01. WEB DESIGN', '02. PROMOTION DESIGN', '03. VIDEO & SHORT-FORM']
+                : CAPABILITY_FALLBACK
               ).map((cap, i, arr) => (
-                <React.Fragment key={`${cap}-${i}`}>
-                  <span className="text-zinc-200 font-medium">{cap}</span>
+                <React.Fragment key={`cap-${i}`}>
+                  <SiteText
+                    tkey={`hero.capability.${i}`}
+                    fallback={cap}
+                    label={`역량 칩 ${i + 1}`}
+                    className="text-zinc-200 font-medium"
+                  />
                   {i < arr.length - 1 && <span className="text-zinc-600">·</span>}
                 </React.Fragment>
               ))}
@@ -173,18 +191,26 @@ export const Hero: React.FC = () => {
           <HomeBlockShell key={key} {...shellPropsFor(key)}>
             <div className="flex flex-wrap items-center gap-3 pt-3">
               <button
-                onClick={() => navigateTo('contact')}
+                onClick={guardNav(() => navigateTo('contact'))}
                 className="px-6 py-3.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-500 active:bg-blue-700 rounded-xl transition-all duration-150 flex items-center gap-2 shadow-lg shadow-blue-600/25 hover:shadow-blue-500/35 cursor-pointer whitespace-nowrap"
               >
-                <span>프로젝트 의뢰하기</span>
+                <SiteText
+                  tkey="hero.cta.primary"
+                  fallback="프로젝트 의뢰하기"
+                  label="주요 CTA 문구"
+                />
                 <ArrowUpRight className="w-4 h-4" />
               </button>
 
               <button
-                onClick={() => navigateTo('works')}
+                onClick={guardNav(() => navigateTo('works'))}
                 className="px-5 py-3.5 text-sm font-semibold text-zinc-300 hover:text-white bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-800 rounded-xl transition-all duration-150 flex items-center gap-2 cursor-pointer whitespace-nowrap"
               >
-                <span>포트폴리오 전체보기</span>
+                <SiteText
+                  tkey="hero.cta.secondary"
+                  fallback="포트폴리오 전체보기"
+                  label="보조 CTA 문구"
+                />
                 <ArrowDown className="w-4 h-4 text-zinc-400" />
               </button>
             </div>
@@ -195,18 +221,12 @@ export const Hero: React.FC = () => {
         return (
           <HomeBlockShell key={key} {...shellPropsFor(key)}>
             <div className="pt-2 flex flex-wrap items-center gap-6 text-xs text-zinc-400">
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-blue-400 shrink-0" />
-                <span>마감 일정 100% 엄수</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-blue-400 shrink-0" />
-                <span>기획부터 영상까지 올인원</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-blue-400 shrink-0" />
-                <span>세금계산서 발행 가능</span>
-              </div>
+              {HERO_TRUST_FALLBACK.map((t, i) => (
+                <div key={`trust-${i}`} className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-blue-400 shrink-0" />
+                  <SiteText tkey={`hero.trust.${i}`} fallback={t} label={`신뢰 포인트 ${i + 1}`} />
+                </div>
+              ))}
             </div>
           </HomeBlockShell>
         );
@@ -248,31 +268,51 @@ export const Hero: React.FC = () => {
       >
         {/* Studio Desk / Multi-Monitor Image */}
         <div className="relative aspect-[4/3] w-full overflow-hidden">
-          <img
-            src="/images/hero_design_showcase_1794358690838.jpg"
+          <SiteImage
+            ikey="hero.media.image"
+            fallback="/images/hero_design_showcase_1794358690838.jpg"
+            label="히어로 이미지"
             alt="Creative Design Studio Workspace"
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-            referrerPolicy="no-referrer"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
         </div>
 
         {/* Overlaid Information Banner inside the card */}
         <div className="absolute bottom-0 inset-x-0 p-5 space-y-2">
           <div className="flex items-center justify-between text-xs text-zinc-300">
-            <span className="font-semibold text-white">PORTFOLIO_SO.A WORKSPACE</span>
-            <span className="text-blue-400 text-[11px] font-mono">EST. 2026</span>
+            <SiteText
+              tkey="hero.media.title"
+              fallback="PORTFOLIO_SO.A WORKSPACE"
+              label="카드 제목"
+              className="font-semibold text-white"
+            />
+            <SiteText
+              tkey="hero.media.est"
+              fallback="EST. 2026"
+              label="카드 연도"
+              className="text-blue-400 text-[11px] font-mono"
+            />
           </div>
           <p className="text-xs text-zinc-300 line-clamp-2">
-            기획자 없이도 마케팅 목적에 부합하는 웹디자인과 고관여 숏폼 영상을 유기적으로 완성합니다.
+            <SiteText
+              tkey="hero.media.desc"
+              fallback="기획자 없이도 마케팅 목적에 부합하는 웹디자인과 고관여 숏폼 영상을 유기적으로 완성합니다."
+              label="카드 설명"
+              multiline
+            />
           </p>
 
           {featuredProject && (
             <button
-              onClick={() => setActiveProjectDetail(featuredProject)}
+              onClick={guardNav(() => setActiveProjectDetail(featuredProject))}
               className="w-full mt-2 py-2 px-3 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 rounded-lg text-xs font-medium text-white flex items-center justify-between transition-colors cursor-pointer"
             >
-              <span>대표 프로젝트 케이스 스터디 열람</span>
+              <SiteText
+                tkey="hero.media.cta"
+                fallback="대표 프로젝트 케이스 스터디 열람"
+                label="카드 버튼 문구"
+              />
               <ArrowUpRight className="w-3.5 h-3.5 text-blue-400" />
             </button>
           )}
@@ -281,7 +321,12 @@ export const Hero: React.FC = () => {
         {/* Floating conversion badge */}
         <div className="absolute top-4 right-4 bg-black/80 backdrop-blur-md border border-zinc-700/80 rounded-lg px-3 py-1.5 shadow-lg flex items-center gap-2">
           <TrendingUp className="w-3.5 h-3.5 text-blue-400" />
-          <span className="text-xs font-semibold text-white">평균 전환율 +148%</span>
+          <SiteText
+            tkey="hero.media.badge"
+            fallback="평균 전환율 +148%"
+            label="전환율 배지"
+            className="text-xs font-semibold text-white"
+          />
         </div>
       </div>
     </HomeBlockShell>

@@ -3,6 +3,7 @@ import { useStudio } from '../context/StudioContext';
 import { Project } from '../types';
 import { ArrowUpRight, TrendingUp, Sparkles } from 'lucide-react';
 import { EditableText } from './editable/EditableText';
+import { SiteText } from './editable/SiteText';
 
 export const Works: React.FC = () => {
   const { projects, setActiveProjectDetail, menuContent, updateHomeContent } = useStudio();
@@ -33,7 +34,7 @@ export const Works: React.FC = () => {
           <div className="space-y-3">
             <div className="inline-flex items-center gap-2 text-xs font-semibold tracking-wider text-blue-400">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-              <span>03. SELECTED PORTFOLIO</span>
+              <SiteText tkey="works.kicker" fallback="03. SELECTED PORTFOLIO" label="WORKS 상단 라벨" />
             </div>
             <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight">
               <EditableText
@@ -68,7 +69,11 @@ export const Works: React.FC = () => {
                     : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
                 }`}
               >
-                {tab.label}
+                <SiteText
+                  tkey={`works.filter.${tab.key}`}
+                  fallback={tab.label}
+                  label={`${tab.label} 탭`}
+                />
               </button>
             ))}
           </div>
@@ -101,13 +106,17 @@ export const Works: React.FC = () => {
                   <div className="flex items-center gap-1.5">
                     {project.gallery && project.gallery.length > 1 && (
                       <span className="text-[10px] font-mono text-zinc-300 bg-black/70 backdrop-blur-md px-2 py-1 rounded-md border border-zinc-800 flex items-center gap-1">
-                        <span>미디어 {project.gallery.length}개</span>
+                        <SiteText
+                          tkey={`works.mediaCount.${project.id}`}
+                          fallback={`미디어 ${project.gallery.length}개`}
+                          label="미디어 개수 라벨"
+                        />
                       </span>
                     )}
                     {project.beforeAfter && (
                       <span className="text-[11px] font-medium text-blue-300 bg-blue-950/80 backdrop-blur-md px-2.5 py-1 rounded-md border border-blue-800/60 flex items-center gap-1">
                         <Sparkles className="w-3 h-3 text-blue-400" />
-                        <span>Before / After</span>
+                        <SiteText tkey="works.beforeAfter" fallback="Before / After" label="비포애프터 라벨" />
                       </span>
                     )}
                   </div>
@@ -154,7 +163,7 @@ export const Works: React.FC = () => {
                   </div>
 
                   <span className="text-xs font-bold text-blue-400 flex items-center gap-1 shrink-0 group-hover:translate-x-0.5 transition-transform">
-                    <span>분석 보기</span>
+                    <SiteText tkey="works.detailCta" fallback="분석 보기" label="상세보기 버튼" />
                     <ArrowUpRight className="w-3.5 h-3.5" />
                   </span>
                 </div>

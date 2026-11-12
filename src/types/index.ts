@@ -228,5 +228,13 @@ export interface SiteMenuContent {
   contact: ContactContent;
   /** 자주 묻는 질문 — 관리자 모드에서 추가/수정/삭제/순서 변경 가능 */
   faqs?: FaqItem[];
+  /**
+   * 홈 화면 문구 오버라이드.
+   * key 는 화면상 위치를 나타내는 고유 문자열(예: 'hero.cta.primary'), value 는 사용자가 고친 문구.
+   * 값이 없으면 컴포넌트에 지정된 기본 문구를 그대로 씁니다.
+   */
+  textOverrides?: Record<string, string>;
+  /** 홈 화면 이미지 오버라이드. key → 이미지 URL(또는 업로드된 Data URL) */
+  imageOverrides?: Record<string, string>;
 }
 

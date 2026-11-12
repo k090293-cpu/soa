@@ -3,6 +3,7 @@ import { useStudio } from '../context/StudioContext';
 import { PROCESS_STEPS } from '../data/servicesData';
 import { ChevronDown, HelpCircle, Plus } from 'lucide-react';
 import { EditableText } from './editable/EditableText';
+import { SiteText } from './editable/SiteText';
 import { HomeBlockShell } from './editable/HomeBlockShell';
 
 export const Process: React.FC = () => {
@@ -27,15 +28,25 @@ export const Process: React.FC = () => {
         <div className="max-w-3xl space-y-4 mb-16">
           <div className="inline-flex items-center gap-2 text-xs font-semibold tracking-wider text-blue-400">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-            <span>05. WORKFLOW & PROCESS</span>
+            <SiteText tkey="process.kicker" fallback="05. WORKFLOW & PROCESS" label="PROCESS 상단 라벨" />
           </div>
 
           <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight">
-            체계적이고 투명한 작업 프로세스
+            <SiteText
+              tkey="process.title"
+              fallback="체계적이고 투명한 작업 프로세스"
+              label="PROCESS 제목"
+              multiline
+            />
           </h2>
 
           <p className="text-zinc-400 text-sm sm:text-base leading-relaxed">
-            처음 외주를 맡기시는 분도 안심하실 수 있도록 모든 단계를 투명하게 공유하며, 약속된 일정에 차질 없이 최고 퀄리티의 결과물을 완성합니다.
+            <SiteText
+              tkey="process.subtitle"
+              fallback="처음 외주를 맡기시는 분도 안심하실 수 있도록 모든 단계를 투명하게 공유하며, 약속된 일정에 차질 없이 최고 퀄리티의 결과물을 완성합니다."
+              label="PROCESS 설명"
+              multiline
+            />
           </p>
         </div>
 
@@ -52,19 +63,21 @@ export const Process: React.FC = () => {
                     {step.step}
                   </span>
                   <span className="text-[11px] font-medium text-zinc-500 bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800">
-                    {step.duration}
+                    <SiteText tkey={`process.step.${idx}.duration`} fallback={step.duration} label={`STEP${idx + 1} 기간`} />
                   </span>
                 </div>
 
                 <div className="space-y-1">
-                  <div className="text-[11px] font-mono font-medium text-zinc-500">{step.englishTitle}</div>
+                  <div className="text-[11px] font-mono font-medium text-zinc-500">
+                    <SiteText tkey={`process.step.${idx}.englishTitle`} fallback={step.englishTitle} label={`STEP${idx + 1} 영문명`} />
+                  </div>
                   <h3 className="text-base font-bold text-white group-hover:text-blue-300 transition-colors">
-                    {step.title}
+                    <SiteText tkey={`process.step.${idx}.title`} fallback={step.title} label={`STEP${idx + 1} 제목`} multiline />
                   </h3>
                 </div>
 
                 <p className="text-xs text-zinc-400 leading-relaxed">
-                  {step.desc}
+                  <SiteText tkey={`process.step.${idx}.desc`} fallback={step.desc} label={`STEP${idx + 1} 설명`} multiline />
                 </p>
               </div>
 
@@ -72,7 +85,14 @@ export const Process: React.FC = () => {
                 {step.details.map((item, dIdx) => (
                   <div key={dIdx} className="flex items-start gap-1.5 text-[11px] text-zinc-400">
                     <span className="text-blue-500 mt-0.5">·</span>
-                    <span>{item}</span>
+                    <span>
+                      <SiteText
+                        tkey={`process.step.${idx}.detail.${dIdx}`}
+                        fallback={item}
+                        label={`STEP${idx + 1} 상세${dIdx + 1}`}
+                        multiline
+                      />
+                    </span>
                   </div>
                 ))}
               </div>
@@ -87,8 +107,17 @@ export const Process: React.FC = () => {
               <HelpCircle className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-xl font-bold text-white">자주 묻는 질문 (FAQ)</h3>
-              <p className="text-xs text-zinc-400">외주 의뢰 전 가장 많이 문의주시는 질문들을 모았습니다.</p>
+              <h3 className="text-xl font-bold text-white">
+                <SiteText tkey="process.faqTitle" fallback="자주 묻는 질문 (FAQ)" label="FAQ 제목" />
+              </h3>
+              <p className="text-xs text-zinc-400">
+                <SiteText
+                  tkey="process.faqSubtitle"
+                  fallback="외주 의뢰 전 가장 많이 문의주시는 질문들을 모았습니다."
+                  label="FAQ 설명"
+                  multiline
+                />
+              </p>
             </div>
           </div>
 

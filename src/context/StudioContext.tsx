@@ -69,6 +69,17 @@ interface StudioContextType {
   deleteFaq: (id: string) => void;
   reorderFaq: (index: number, direction: 'up' | 'down') => void;
   resetFaqs: () => void;
+  // 홈 화면 전체 문구 / 이미지 오버라이드
+  /** key 에 저장된 문구 (없으면 fallback) */
+  siteText: (key: string, fallback: string) => string;
+  setSiteText: (key: string, value: string) => void;
+  /** key 에 저장된 이미지 URL (없으면 fallback) */
+  siteImage: (key: string, fallback: string) => string;
+  setSiteImage: (key: string, value: string) => void;
+  /** 특정 문구/이미지 오버라이드 제거 (기본값으로 되돌리기) */
+  clearSiteOverride: (key: string) => void;
+  /** 모든 문구/이미지 오버라이드 초기화 */
+  resetSiteOverrides: () => void;
   // 홈 커스텀 레이어 편집 (생성/수정/삭제)
   addHomeLayer: (layer: Omit<HomeLayer, 'id'>) => string;
   updateHomeLayer: (id: string, data: Partial<HomeLayer>) => void;
@@ -743,6 +754,51 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setMenuContent((prev) => ({ ...prev, faqs: INITIAL_FAQS }));
   };
 
+  // 홈 화면 전체 문구 / 이미지 오버라이드 -------------------------------------
+  // key: 화면상 위치를 나타내는 고유 문자열. value 가 있으면 기본 문구 대신 사용합니다.
+  const siteText = (key: string, fallback: string): string => {
+    const v = menuContent.textOverrides?.[key];
+    return typeof v === 'string' && v.length > 0 ? v : fallback;
+  };
+
+  const setSiteText = (key: string, value: string) => {
+    setMenuContent((prev) => {
+      const next = { ...(prev.textOverrides || {}) };
+      const fallback = '';
+      if (!value || value === fallback) delete next[key];
+      else next[key] = value;
+      return { ...prev, textOverrides: next };
+    });
+  };
+
+  const siteImage = (key: string, fallback: string): string => {
+    const v = menuContent.imageOverrides?.[key];
+    return typeof v === 'string' && v.length > 0 ? v : fallback;
+  };
+
+  const setSiteImage = (key: string, value: string) => {
+    setMenuContent((prev) => {
+      const next = { ...(prev.imageOverrides || {}) };
+      if (!value) delete next[key];
+      else next[key] = value;
+      return { ...prev, imageOverrides: next };
+    });
+  };
+
+  const clearSiteOverride = (key: string) => {
+    setMenuContent((prev) => {
+      const texts = { ...(prev.textOverrides || {}) };
+      const images = { ...(prev.imageOverrides || {}) };
+      delete texts[key];
+      delete images[key];
+      return { ...prev, textOverrides: texts, imageOverrides: images };
+    });
+  };
+
+  const resetSiteOverrides = () => {
+    setMenuContent((prev) => ({ ...prev, textOverrides: {}, imageOverrides: {} }));
+  };
+
   // 홈 커스텀 레이어 (생성/수정/삭제/순서) -------------------------------------
   const addHomeLayer = (layer: Omit<HomeLayer, 'id'>) => {
     const newLayer: HomeLayer = { ...layer, id: `layer-${Date.now()}-${Math.random().toString(36).slice(2, 6)}` };
@@ -979,6 +1035,12 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         deleteFaq,
         reorderFaq,
         resetFaqs,
+        siteText,
+        setSiteText,
+        siteImage,
+        setSiteImage,
+        clearSiteOverride,
+        resetSiteOverrides,
         addHomeLayer,
         updateHomeLayer,
         deleteHomeLayer,
