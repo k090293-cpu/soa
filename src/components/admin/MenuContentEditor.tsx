@@ -16,7 +16,8 @@ import {
   EyeOff,
   Sparkles,
   Layers,
-  Compass
+  Compass,
+  HelpCircle
 } from 'lucide-react';
 
 export const MenuContentEditor: React.FC = () => {
@@ -45,10 +46,18 @@ export const MenuContentEditor: React.FC = () => {
     reorderHomeKpis,
     deleteHomeKpi,
     addHomeKpi,
+    faqs,
+    addFaq,
+    updateFaq,
+    deleteFaq,
+    reorderFaq,
+    resetFaqs,
   } = useStudio();
 
-  // Sub-tabs: 'nav' | 'works' | 'service' | 'about' | 'home' | 'contact'
-  const [activeSubTab, setActiveSubTab] = useState<'nav' | 'works' | 'service' | 'about' | 'home' | 'contact'>('nav');
+  // Sub-tabs: 'nav' | 'works' | 'service' | 'about' | 'home' | 'contact' | 'faq'
+  const [activeSubTab, setActiveSubTab] = useState<
+    'nav' | 'works' | 'service' | 'about' | 'home' | 'contact' | 'faq'
+  >('nav');
   const [saveSuccessMsg, setSaveSuccessMsg] = useState('');
 
   // New Item Modals/Forms State
@@ -332,6 +341,18 @@ export const MenuContentEditor: React.FC = () => {
         >
           <Mail className="w-3.5 h-3.5" />
           <span>6. CONTACT 안내</span>
+        </button>
+
+        <button
+          onClick={() => setActiveSubTab('faq')}
+          className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer ${
+            activeSubTab === 'faq'
+              ? 'bg-blue-600 text-white'
+              : 'text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-800'
+          }`}
+        >
+          <HelpCircle className="w-3.5 h-3.5" />
+          <span>7. Q&A (자주 묻는 질문) {faqs.length}</span>
         </button>
       </div>
 
@@ -1365,6 +1386,127 @@ export const MenuContentEditor: React.FC = () => {
             <span>CONTACT 내용 저장</span>
           </button>
         </form>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 7. FAQ(Q&A) TAB — 홈/서비스 페이지에 노출되는 질문·답변 관리 */}
+      {/* ========================================================================= */}
+      {activeSubTab === 'faq' && (
+        <div className="space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+            <div>
+              <h4 className="text-sm font-bold text-white flex items-center gap-1.5">
+                <HelpCircle className="w-4 h-4 text-blue-400" />
+                <span>Q&A (자주 묻는 질문) 관리</span>
+              </h4>
+              <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
+                홈 화면의 <strong className="text-zinc-200">05. PROCESS</strong> 섹션과{' '}
+                <strong className="text-zinc-200">SERVICE</strong> 페이지에 함께 노출됩니다. 질문·답변을
+                수정하고, ▲▼ 로 순서를 바꾸거나 삭제·추가할 수 있습니다.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (confirm('Q&A 를 기본 5개 항목으로 되돌리시겠습니까?')) resetFaqs();
+              }}
+              className="px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-[11px] text-zinc-400 hover:text-white flex items-center gap-1.5 cursor-pointer shrink-0"
+              title="기본 Q&A 5개 항목으로 복원"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>기본값 복원</span>
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            {faqs.map((faq, idx) => (
+              <div
+                key={faq.id}
+                className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-3"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-bold text-blue-400 font-mono">
+                    Q{String(idx + 1).padStart(2, '0')}
+                  </span>
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => reorderFaq(idx, 'up')}
+                      disabled={idx === 0}
+                      className="w-5 h-5 rounded border flex items-center justify-center bg-zinc-900 border-zinc-700 text-zinc-300 hover:text-white disabled:opacity-30 cursor-pointer"
+                      title="위로 이동"
+                    >
+                      <ArrowUp className="w-3 h-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => reorderFaq(idx, 'down')}
+                      disabled={idx === faqs.length - 1}
+                      className="w-5 h-5 rounded border flex items-center justify-center bg-zinc-900 border-zinc-700 text-zinc-300 hover:text-white disabled:opacity-30 cursor-pointer"
+                      title="아래로 이동"
+                    >
+                      <ArrowDown className="w-3 h-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirm('이 Q&A 항목을 삭제하시겠습니까?' + '\n\n' + faq.q)) deleteFaq(faq.id);
+                      }}
+                      className="w-5 h-5 rounded border flex items-center justify-center bg-red-600 border-red-400 text-white hover:bg-red-500 cursor-pointer"
+                      title="삭제"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] text-zinc-400">질문</label>
+                  <input
+                    type="text"
+                    value={faq.q}
+                    onChange={(e) => updateFaq(faq.id, { q: e.target.value })}
+                    placeholder="질문을 입력하세요"
+                    className="w-full px-3.5 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] text-zinc-400">답변</label>
+                  <textarea
+                    rows={3}
+                    value={faq.a}
+                    onChange={(e) => updateFaq(faq.id, { a: e.target.value })}
+                    placeholder="답변을 입력하세요"
+                    className="w-full px-3.5 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white leading-relaxed focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+            ))}
+
+            {faqs.length === 0 && (
+              <p className="text-xs text-zinc-500 text-center py-8">
+                등록된 Q&A 가 없습니다. 아래 버튼으로 첫 질문을 추가해 보세요.
+              </p>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => addFaq()}
+            className="w-full py-2.5 rounded-xl border border-dashed border-blue-500/50 text-blue-300 hover:text-white hover:bg-blue-600/20 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Q&A 항목 추가</span>
+          </button>
+
+          <p className="text-[11px] text-zinc-500 leading-relaxed">
+            ※ 변경 내용은 입력 즉시 자동 저장됩니다(별도 저장 버튼 없음). 홈 화면에서는 편집 모드를 켜면
+            질문·답변 글자를 직접 클릭해 수정할 수도 있습니다.
+          </p>
+        </div>
       )}
     </div>
   );

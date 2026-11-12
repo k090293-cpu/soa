@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStudio } from '../context/StudioContext';
-import { SERVICES_LIST, PROCESS_STEPS, FAQS } from '../data/servicesData';
+import { SERVICES_LIST, PROCESS_STEPS } from '../data/servicesData';
 import {
   ArrowUpRight,
   CheckCircle2,
@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 
 export const ServicePage: React.FC = () => {
-  const { navigateTo, setSelectedInquiryCategory, menuContent } = useStudio();
+  const { navigateTo, setSelectedInquiryCategory, menuContent, faqs } = useStudio();
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   const servicesList = menuContent.services && menuContent.services.length > 0
@@ -237,7 +237,7 @@ export const ServicePage: React.FC = () => {
           </div>
 
           <div className="space-y-3">
-            {FAQS.map((faq, idx) => {
+            {faqs.map((faq, idx) => {
               const isOpen = openFaq === idx;
               return (
                 <div

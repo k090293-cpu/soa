@@ -1,4 +1,4 @@
-import { NavMenuItem, WorksCategoryItem, AboutStrengthItem, SiteMenuContent } from '../types';
+import { NavMenuItem, WorksCategoryItem, AboutStrengthItem, SiteMenuContent, FaqItem } from '../types';
 
 export interface ServiceItem {
   id: string;
@@ -197,28 +197,36 @@ export const TRUST_STATS = [
   { value: '100%', label: '마감 일정 준수율', sub: '약속된 딜리버리 데드라인' },
 ];
 
-export const FAQS = [
+export const INITIAL_FAQS: FaqItem[] = [
   {
+    id: 'faq-1',
     q: '외주 디자인 의뢰가 처음인데 무엇을 준비해야 하나요?',
     a: '제품 사진, 제품 특징(소구점), 희망하시는 벤치마킹 레퍼런스 링크 1~2개만 알려주시면 충분합니다. 기획안이 구체적이지 않아도 스튜디오에서 카피라이팅과 레이아웃 구조를 함께 잡아드립니다.',
   },
   {
+    id: 'faq-2',
     q: '수정은 몇 회까지 가능한가요?',
     a: '기본 2회의 꼼꼼한 피드백 라운드가 포함되어 있습니다. 최초 협의된 기획안 범위 내에서의 디테일 조정(텍스트, 색상, 배치 등)은 신속하게 반영해 드립니다.',
   },
   {
+    id: 'faq-3',
     q: '원본 파일(Figma, PSD, 프리미어 등)도 제공되나요?',
     a: '네, 최종 결제 완료 후 클라이언트가 향후에도 자유롭게 유지보수하실 수 있도록 텍스트 수정이 가능한 원본 작업 파일 일체를 클라우드 링크로 전달해 드립니다.',
   },
   {
+    id: 'faq-4',
     q: '작업 기간은 보통 얼마나 걸리나요?',
     a: '배너 세트는 2~4일, 숏폼 영상은 4~7일, 상세페이지는 5~10일 정도 소요됩니다. 급한 론칭 일정의 경우 익스프레스 패스트트랙(일정 단축) 옵션 협의도 가능합니다.',
   },
   {
+    id: 'faq-5',
     q: '세금계산서 발행 및 계약서 작성이 가능한가요?',
     a: '네, 정식 사업자 등록 스튜디오로서 전자세금계산서 발행(부VAT 별도)과 표준 용역 계약서 작성이 100% 가능합니다.',
   },
 ];
+
+/** 하위 호환용 (기존 화면에서 FAQS 를 직접 참조하는 경우 대비) */
+export const FAQS = INITIAL_FAQS;
 
 export const INITIAL_NAV_MENUS: NavMenuItem[] = [
   { id: 'nav-home', label: 'HOME', page: 'home', enabled: true },
@@ -305,5 +313,6 @@ export const INITIAL_MENU_CONTENT: SiteMenuContent = {
     introDescription: '귀사의 브랜드에 필요한 웹디자인과 영상 콘텐츠, 지금 상담을 시작해 보세요. 영업일 기준 평균 2시간 이내에 전담 디자이너 SO.A가 직접 1:1 맞춤 견적과 착수 일정을 안내해 드립니다.',
     responsePledge: '평일 업무 시간 내 접수된 모든 문의는 담당 디자이너가 직접 검토 후 2시간 내로 회신드립니다.',
   },
+  faqs: INITIAL_FAQS,
 };
 

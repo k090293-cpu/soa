@@ -1,8 +1,19 @@
 import React, { useState } from 'react';
-import { PROCESS_STEPS, FAQS } from '../data/servicesData';
-import { ChevronDown, HelpCircle } from 'lucide-react';
+import { useStudio } from '../context/StudioContext';
+import { PROCESS_STEPS } from '../data/servicesData';
+import { ChevronDown, HelpCircle, Plus } from 'lucide-react';
+import { EditableText } from './editable/EditableText';
+import { HomeBlockShell } from './editable/HomeBlockShell';
 
 export const Process: React.FC = () => {
+  const {
+    faqs,
+    addFaq,
+    updateFaq,
+    deleteFaq,
+    reorderFaq,
+    isHomeInlineEditMode,
+  } = useStudio();
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   const toggleFaq = (idx: number) => {
@@ -82,36 +93,77 @@ export const Process: React.FC = () => {
           </div>
 
           <div className="space-y-3">
-            {FAQS.map((faq, idx) => {
-              const isOpen = openFaq === idx;
-              return (
-                <div
-                  key={idx}
-                  className="rounded-xl border border-zinc-800/70 overflow-hidden bg-zinc-900/30 transition-colors"
-                >
-                  <button
-                    onClick={() => toggleFaq(idx)}
-                    className="w-full p-4 md:p-5 text-left flex items-center justify-between gap-4 cursor-pointer hover:bg-zinc-900/60 transition-colors"
-                  >
-                    <span className="text-sm font-bold text-zinc-200">
-                      Q. {faq.q}
-                    </span>
-                    <ChevronDown
-                      className={`w-4 h-4 text-zinc-400 transition-transform duration-200 shrink-0 ${
-                        isOpen ? 'rotate-180 text-blue-400' : ''
-                      }`}
-                    />
-                  </button>
+            {faqs.map((faq, idx) => {
+              // 편집 모드에서는 항상 펼쳐서 질문/답변을 바로 수정할 수 있게 합니다.
+              const isOpen = isHomeInlineEditMode || openFaq === idx;
 
-                  {isOpen && (
-                    <div className="px-5 pb-5 pt-1 text-xs sm:text-sm text-zinc-400 leading-relaxed border-t border-zinc-850/60 bg-zinc-950/40">
-                      <p>{faq.a}</p>
-                    </div>
-                  )}
-                </div>
+              return (
+                <HomeBlockShell
+                  key={faq.id}
+                  blockKey={`faq-${idx}`}
+                  group="faq"
+                  label={`Q&A ${idx + 1}`}
+                  movable
+                  deletable
+                  compact
+                  isFirst={idx === 0}
+                  isLast={idx === faqs.length - 1}
+                  onDelete={() => deleteFaq(faq.id)}
+                  onMoveUp={() => reorderFaq(idx, 'up')}
+                  onMoveDown={() => reorderFaq(idx, 'down')}
+                  className="rounded-xl"
+                >
+                  <div className="rounded-xl border border-zinc-800/70 overflow-hidden bg-zinc-900/30 transition-colors">
+                    <button
+                      onClick={() => toggleFaq(idx)}
+                      className="w-full p-4 md:p-5 text-left flex items-center justify-between gap-4 cursor-pointer hover:bg-zinc-900/60 transition-colors"
+                    >
+                      <span className="text-sm font-bold text-zinc-200">
+                        Q.{' '}
+                        <EditableText
+                          value={faq.q}
+                          onSave={(v) => updateFaq(faq.id, { q: v })}
+                          label={`Q&A ${idx + 1} 질문`}
+                          multiline
+                        />
+                      </span>
+                      <ChevronDown
+                        className={`w-4 h-4 text-zinc-400 transition-transform duration-200 shrink-0 ${
+                          isOpen ? 'rotate-180 text-blue-400' : ''
+                        }`}
+                      />
+                    </button>
+
+                    {isOpen && (
+                      <div className="px-5 pb-5 pt-1 text-xs sm:text-sm text-zinc-400 leading-relaxed border-t border-zinc-850/60 bg-zinc-950/40">
+                        <EditableText
+                          value={faq.a}
+                          onSave={(v) => updateFaq(faq.id, { a: v })}
+                          label={`Q&A ${idx + 1} 답변`}
+                          multiline
+                        />
+                      </div>
+                    )}
+                  </div>
+                </HomeBlockShell>
               );
             })}
           </div>
+
+          {/* 편집 모드: Q&A 추가 */}
+          {isHomeInlineEditMode && (
+            <button
+              type="button"
+              onClick={() => {
+                addFaq();
+                setOpenFaq(null);
+              }}
+              className="mt-4 w-full py-2.5 rounded-xl border border-dashed border-blue-500/50 text-blue-300 hover:text-white hover:bg-blue-600/20 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Q&A 항목 추가</span>
+            </button>
+          )}
         </div>
       </div>
     </section>

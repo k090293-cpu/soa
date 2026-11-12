@@ -210,6 +210,15 @@ export interface ContactContent {
   responsePledge: string;
 }
 
+/** 자주 묻는 질문(Q&A) 항목 */
+export interface FaqItem {
+  id: string;
+  /** 질문 */
+  q: string;
+  /** 답변 */
+  a: string;
+}
+
 export interface SiteMenuContent {
   navMenus: NavMenuItem[];
   worksCategories: WorksCategoryItem[];
@@ -217,5 +226,7 @@ export interface SiteMenuContent {
   about: AboutContent;
   services: ServiceContentItem[];
   contact: ContactContent;
+  /** 자주 묻는 질문 — 관리자 모드에서 추가/수정/삭제/순서 변경 가능 */
+  faqs?: FaqItem[];
 }
 

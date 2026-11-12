@@ -15,13 +15,15 @@ import {
   AboutStrengthItem,
   HomeLayer,
   ThemeMode,
+  FaqItem,
 } from '../types';
 import { INITIAL_PROJECTS, INITIAL_INQUIRIES, INITIAL_STUDIO_CONFIG } from '../data/initialProjects';
 import {
   INITIAL_MENU_CONTENT,
   INITIAL_NAV_MENUS,
   INITIAL_WORKS_CATEGORIES,
-  INITIAL_ABOUT_STRENGTHS
+  INITIAL_ABOUT_STRENGTHS,
+  INITIAL_FAQS
 } from '../data/servicesData';
 import {
   getBlockOrder,
@@ -60,6 +62,13 @@ interface StudioContextType {
   reorderHomeKpis: (index: number, direction: 'up' | 'down') => void;
   deleteHomeKpi: (index: number) => void;
   addHomeKpi: (kpi: { value: string; label: string; sub: string }) => void;
+  // Q&A(자주 묻는 질문) 관리
+  faqs: FaqItem[];
+  addFaq: (faq?: Partial<Pick<FaqItem, 'q' | 'a'>>) => string;
+  updateFaq: (id: string, data: Partial<Pick<FaqItem, 'q' | 'a'>>) => void;
+  deleteFaq: (id: string) => void;
+  reorderFaq: (index: number, direction: 'up' | 'down') => void;
+  resetFaqs: () => void;
   // 홈 커스텀 레이어 편집 (생성/수정/삭제)
   addHomeLayer: (layer: Omit<HomeLayer, 'id'>) => string;
   updateHomeLayer: (id: string, data: Partial<HomeLayer>) => void;
@@ -208,6 +217,8 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             ...INITIAL_MENU_CONTENT.contact,
             ...(parsed.contact || {}),
           },
+          // 기존 저장본에는 faqs 가 없을 수 있으므로 기본값으로 보충합니다.
+          faqs: Array.isArray(parsed.faqs) ? parsed.faqs : INITIAL_FAQS,
         };
       }
     } catch (e) {
@@ -690,6 +701,48 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }));
   };
 
+  // Q&A(자주 묻는 질문) 관리 ------------------------------------------------
+  const faqs = menuContent.faqs || [];
+
+  const addFaq = (faq?: Partial<Pick<FaqItem, 'q' | 'a'>>) => {
+    const id = `faq-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const newFaq: FaqItem = {
+      id,
+      q: faq?.q ?? '새로운 질문을 입력하세요',
+      a: faq?.a ?? '답변 내용을 입력하세요.',
+    };
+    setMenuContent((prev) => ({
+      ...prev,
+      faqs: [...(prev.faqs || []), newFaq],
+    }));
+    return id;
+  };
+
+  const updateFaq = (id: string, data: Partial<Pick<FaqItem, 'q' | 'a'>>) => {
+    setMenuContent((prev) => ({
+      ...prev,
+      faqs: (prev.faqs || []).map((f) => (f.id === id ? { ...f, ...data } : f)),
+    }));
+  };
+
+  const deleteFaq = (id: string) => {
+    setMenuContent((prev) => ({
+      ...prev,
+      faqs: (prev.faqs || []).filter((f) => f.id !== id),
+    }));
+  };
+
+  const reorderFaq = (index: number, direction: 'up' | 'down') => {
+    setMenuContent((prev) => ({
+      ...prev,
+      faqs: moveItemInArray(prev.faqs || [], index, direction),
+    }));
+  };
+
+  const resetFaqs = () => {
+    setMenuContent((prev) => ({ ...prev, faqs: INITIAL_FAQS }));
+  };
+
   // 홈 커스텀 레이어 (생성/수정/삭제/순서) -------------------------------------
   const addHomeLayer = (layer: Omit<HomeLayer, 'id'>) => {
     const newLayer: HomeLayer = { ...layer, id: `layer-${Date.now()}-${Math.random().toString(36).slice(2, 6)}` };
@@ -920,6 +973,12 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         reorderHomeKpis,
         deleteHomeKpi,
         addHomeKpi,
+        faqs,
+        addFaq,
+        updateFaq,
+        deleteFaq,
+        reorderFaq,
+        resetFaqs,
         addHomeLayer,
         updateHomeLayer,
         deleteHomeLayer,
