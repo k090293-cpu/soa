@@ -8,7 +8,7 @@ import { Trust } from '../components/Trust';
 import { Contact } from '../components/Contact';
 import { useStudio } from '../context/StudioContext';
 import { HomeLayersOverlay } from '../components/editable/HomeLayersOverlay';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 export const HomePage: React.FC = () => {
   const { navigateTo } = useStudio();

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useStudio } from '../context/StudioContext';
-import { ArrowUpRight, MessageCircle } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 
 export const FloatingCTA: React.FC = () => {
   const { navigateTo } = useStudio();

@@ -21,19 +21,19 @@ export const INITIAL_PROJECTS: Project[] = [
     client: 'Aurélia Paris Korea',
     year: '2026',
     summary: '감성적 비주얼 스토리텔링과 성분 신뢰도를 극대화하여 론칭 첫 주 구매 전환율 148% 성장을 기록한 프리미엄 스킨케어 상세페이지 기획/제작',
-    image: '/src/assets/images/portfolio_web_cosmetics_1794358690539.jpg',
+    image: '/images/portfolio_web_cosmetics_1794358690539.jpg',
     gallery: [
       {
         id: 'g-aurelia-1',
         type: 'image',
-        url: '/src/assets/images/portfolio_web_cosmetics_1794358690539.jpg',
+        url: '/images/portfolio_web_cosmetics_1794358690539.jpg',
         name: '상세페이지 메인 에디토리얼 레이아웃',
         isCover: true,
       },
       {
         id: 'g-aurelia-2',
         type: 'image',
-        url: '/src/assets/images/hero_design_showcase_1794358690838.jpg',
+        url: '/images/hero_design_showcase_1794358690838.jpg',
         name: '모바일 100% 최적화 반응형 뷰',
       },
     ],
@@ -51,8 +51,8 @@ export const INITIAL_PROJECTS: Project[] = [
     tools: ['Figma', 'Photoshop', 'Midjourney', 'Illustrator'],
     featured: true,
     beforeAfter: {
-      beforeImage: '/src/assets/images/portfolio_web_cosmetics_1794358690539.jpg',
-      afterImage: '/src/assets/images/portfolio_web_cosmetics_1794358690539.jpg',
+      beforeImage: '/images/portfolio_web_cosmetics_1794358690539.jpg',
+      afterImage: '/images/portfolio_web_cosmetics_1794358690539.jpg',
       beforeNotes: '기존: 텍스트 위주의 빽빽한 성분 나열, 저화질 패키지 컷, 모바일 가독성 저하',
       afterNotes: '개선 후: 에디토리얼 레이아웃, 직관적인 임상 데이터 시각화, 모바일 터치 최적화로 전환율 148% 상승',
     },
@@ -66,19 +66,19 @@ export const INITIAL_PROJECTS: Project[] = [
     client: 'AURA AUDIO Global',
     year: '2026',
     summary: '미니멀 티타늄 바디와 미래적인 라이팅 무드를 강조하여 사전 예약 오픈 48시간 만에 목표 펀딩액 230%를 초과 달성한 캠페인 키비주얼 & 프로모션',
-    image: '/src/assets/images/portfolio_promotion_tech_1794358691610.jpg',
+    image: '/images/portfolio_promotion_tech_1794358691610.jpg',
     gallery: [
       {
         id: 'g-aura-1',
         type: 'image',
-        url: '/src/assets/images/portfolio_promotion_tech_1794358691610.jpg',
+        url: '/images/portfolio_promotion_tech_1794358691610.jpg',
         name: '글로벌 론칭 캠페인 메인 키비주얼',
         isCover: true,
       },
       {
         id: 'g-aura-2',
         type: 'image',
-        url: '/src/assets/images/hero_design_showcase_1794358690838.jpg',
+        url: '/images/hero_design_showcase_1794358690838.jpg',
         name: '디스플레이 광고 배너 키트 12종',
       },
     ],
@@ -105,12 +105,12 @@ export const INITIAL_PROJECTS: Project[] = [
     client: 'URBAN RHYTHM Seoul',
     year: '2026',
     summary: '도심의 밤거리와 모델의 역동적인 무브먼트를 비트 씽크 컷편집과 글리치 모션 그래픽으로 담아내어 틱톡/릴스 380만 유기적 조회수를 기록한 숏폼 시리즈',
-    image: '/src/assets/images/portfolio_video_motion_1794358691788.jpg',
+    image: '/images/portfolio_video_motion_1794358691788.jpg',
     gallery: [
       {
         id: 'g-urban-1',
         type: 'image',
-        url: '/src/assets/images/portfolio_video_motion_1794358691788.jpg',
+        url: '/images/portfolio_video_motion_1794358691788.jpg',
         name: '릴스 & 쇼츠 9:16 모바일 컷편집 스틸',
         isCover: true,
       },
@@ -145,7 +145,7 @@ export const INITIAL_PROJECTS: Project[] = [
     client: 'Lumen Drinks Co.',
     year: '2025',
     summary: '청량한 탄산 버블과 시원한 블루 그라데이션을 극대화하여 여름 시즌 메타/구글 광고 ROAS 420%를 달성한 디지털 프로모션 배너 및 이벤트 페이지',
-    image: '/src/assets/images/portfolio_promotion_tech_1794358691610.jpg',
+    image: '/images/portfolio_promotion_tech_1794358691610.jpg',
     tags: ['광고 배너 30종', '이벤트 프로모션', 'ROAS 4.2x', '디지털 마케팅 소재'],
     impactMetric: {
       label: '퍼포먼스 광고 ROAS',
@@ -169,7 +169,7 @@ export const INITIAL_PROJECTS: Project[] = [
     client: 'Nova Capital Partners',
     year: '2025',
     summary: '복잡한 금융 지표와 포트폴리오 차트를 군더더기 없는 미니멀 그리드로 정돈하여 신규 회원 가입 전환율 85% 증가를 이끈 핀테크 웹 디자인',
-    image: '/src/assets/images/hero_design_showcase_1794358690838.jpg',
+    image: '/images/hero_design_showcase_1794358690838.jpg',
     tags: ['핀테크 웹 UI', '디자인 시스템', '가입 전환율 +85%', '반응형 대시보드'],
     impactMetric: {
       label: '회원가입 전환율',
@@ -193,7 +193,7 @@ export const INITIAL_PROJECTS: Project[] = [
     client: 'Mono Timepieces Geneva',
     year: '2025',
     summary: '무브먼트 톱니바퀴의 정밀한 기계적 움직임과 티타늄 베젤의 빛 반사를 매크로 렌즈 화각으로 연출한 하이엔드 모션 그래픽 브랜드 필름',
-    image: '/src/assets/images/portfolio_video_motion_1794358691788.jpg',
+    image: '/images/portfolio_video_motion_1794358691788.jpg',
     tags: ['3D 모션 그래픽', '워치 브랜드 필름', '하이엔드 무드', '전시회 오프닝 영상'],
     impactMetric: {
       label: '사전 완판 시간',

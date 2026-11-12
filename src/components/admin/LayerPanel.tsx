@@ -103,8 +103,6 @@ export const LayerPanel: React.FC = () => {
     }
   };
 
-  const selectedLayer = layers.find((l) => l.id === selectedHomeLayerId) || null;
-
   const typeMeta: Record<HomeLayerType, { label: string; icon: React.ElementType; color: string }> = {
     text: { label: 'TEXT', icon: Type, color: 'text-blue-400' },
     badge: { label: 'BADGE', icon: Badge, color: 'text-amber-400' },

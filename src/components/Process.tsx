@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { PROCESS_STEPS, FAQS } from '../data/servicesData';
-import { ChevronDown, ArrowRight, CheckCircle2, HelpCircle } from 'lucide-react';
+import { ChevronDown, HelpCircle } from 'lucide-react';
 
 export const Process: React.FC = () => {
   const [openFaq, setOpenFaq] = useState<number | null>(0);

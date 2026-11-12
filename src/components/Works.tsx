@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useStudio } from '../context/StudioContext';
-import { ProjectCategory, Project } from '../types';
-import { ArrowUpRight, TrendingUp, Sparkles, Filter } from 'lucide-react';
+import { Project } from '../types';
+import { ArrowUpRight, TrendingUp, Sparkles } from 'lucide-react';
 import { EditableText } from './editable/EditableText';
 
 export const Works: React.FC = () => {

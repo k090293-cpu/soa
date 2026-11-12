@@ -8,7 +8,6 @@ import { SplitHomeEditor } from './SplitHomeEditor';
 import { HomePage } from '../../pages/HomePage';
 import {
   Lock,
-  Unlock,
   X,
   Plus,
   Trash2,

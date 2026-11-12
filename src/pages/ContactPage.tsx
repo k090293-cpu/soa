@@ -1,14 +1,7 @@
 import React from 'react';
 import { useStudio } from '../context/StudioContext';
 import { Contact } from '../components/Contact';
-import {
-  CheckCircle2,
-  Clock,
-  ShieldCheck,
-  FileText,
-  MessageSquare,
-  Sparkles
-} from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 
 export const ContactPage: React.FC = () => {
   const { navigateTo, menuContent } = useStudio();

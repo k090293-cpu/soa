@@ -1,6 +1,6 @@
 import React from 'react';
 import { TESTIMONIALS } from '../data/servicesData';
-import { ShieldCheck, TrendingUp, Clock, CheckCircle2, Quote } from 'lucide-react';
+import { ShieldCheck, TrendingUp, Quote } from 'lucide-react';
 
 export const Trust: React.FC = () => {
   const principles = [

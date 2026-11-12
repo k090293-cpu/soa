@@ -1,21 +1,6 @@
 import React from 'react';
 import { useStudio } from '../context/StudioContext';
-import {
-  ArrowRight,
-  ArrowUpRight,
-  CheckCircle2,
-  Clock,
-  Layers,
-  Layout,
-  Video,
-  ShieldCheck,
-  TrendingUp,
-  Sparkles,
-  Zap,
-  Award,
-  Terminal,
-  FolderGit2
-} from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 
 export const AboutPage: React.FC = () => {
   const { navigateTo, menuContent } = useStudio();
@@ -114,7 +99,7 @@ export const AboutPage: React.FC = () => {
           <div className="lg:col-span-5">
             <div className="rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-950 p-2 shadow-2xl">
               <img
-                src="/src/assets/images/hero_design_showcase_1794358690838.jpg"
+                src="/images/hero_design_showcase_1794358690838.jpg"
                 alt="SO.A Design Studio"
                 className="w-full h-auto rounded-xl object-cover"
                 referrerPolicy="no-referrer"

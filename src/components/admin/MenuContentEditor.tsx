@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useStudio } from '../../context/StudioContext';
-import { NavMenuItem, WorksCategoryItem, AboutStrengthItem, ServiceContentItem } from '../../types';
 import {
   Check,
   RotateCcw,
@@ -17,8 +16,7 @@ import {
   EyeOff,
   Sparkles,
   Layers,
-  Compass,
-  AlertCircle
+  Compass
 } from 'lucide-react';
 
 export const MenuContentEditor: React.FC = () => {
@@ -702,6 +700,22 @@ export const MenuContentEditor: React.FC = () => {
                 placeholder="작업 범위 체크리스트 (줄바꿈으로 구분)"
                 className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-750 text-xs text-white leading-relaxed"
               />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  value={newServicePeriod}
+                  onChange={(e) => setNewServicePeriod(e.target.value)}
+                  placeholder="예상 작업 기간 (예: 3~5일 소요)"
+                  className="px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-750 text-xs text-white"
+                />
+                <input
+                  type="text"
+                  value={newServiceRec}
+                  onChange={(e) => setNewServiceRec(e.target.value)}
+                  placeholder="권장 대상 (예: 신규 론칭 및 마케팅팀)"
+                  className="px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-750 text-xs text-white"
+                />
+              </div>
               <div className="flex justify-end gap-2 pt-1">
                 <button
                   type="button"

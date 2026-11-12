@@ -309,7 +309,23 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const logoutAdmin = () => {
     setIsAdminLoggedIn(false);
     sessionStorage.removeItem(STORAGE_KEYS.ADMIN_SESSION);
+    // 편집 모드가 켜진 채 남아 방문자가 글자를 수정할 수 있는 문제를 방지합니다.
+    setIsHomeInlineEditMode(false);
+    setSelectedHomeLayerId(null);
+    setIsSplitEditorOpen(false);
+    setIsAdminModalOpen(false);
   };
+
+  // 관리자 권한이 없어지거나 모달이 닫히면 편집 모드를 반드시 해제합니다.
+  useEffect(() => {
+    if (!isAdminLoggedIn || !isAdminModalOpen) {
+      setIsHomeInlineEditMode(false);
+      setSelectedHomeLayerId(null);
+    }
+    if (!isAdminLoggedIn) {
+      setIsSplitEditorOpen(false);
+    }
+  }, [isAdminLoggedIn, isAdminModalOpen]);
 
   // CRUD for Projects
   const addProject = (projectData: Omit<Project, 'id'>) => {

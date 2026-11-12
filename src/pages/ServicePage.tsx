@@ -7,11 +7,7 @@ import {
   Clock,
   Sparkles,
   HelpCircle,
-  ChevronDown,
-  Layers,
-  FileCheck,
-  ShieldAlert,
-  ArrowRight
+  ChevronDown
 } from 'lucide-react';
 
 export const ServicePage: React.FC = () => {

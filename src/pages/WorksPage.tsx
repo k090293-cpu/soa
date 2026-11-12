@@ -1,15 +1,11 @@
 import React, { useState } from 'react';
 import { useStudio } from '../context/StudioContext';
-import { ProjectCategory, Project } from '../types';
+import { Project } from '../types';
 import {
   ArrowUpRight,
   TrendingUp,
   Sparkles,
-  Search,
-  Filter,
-  CheckCircle2,
-  Layers,
-  ArrowRight
+  Search
 } from 'lucide-react';
 
 export const WorksPage: React.FC = () => {

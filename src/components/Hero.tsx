@@ -1,6 +1,6 @@
 import React from 'react';
 import { useStudio } from '../context/StudioContext';
-import { ArrowDown, ArrowUpRight, Play, CheckCircle2, TrendingUp, Sparkles } from 'lucide-react';
+import { ArrowDown, ArrowUpRight, CheckCircle2, TrendingUp } from 'lucide-react';
 import { TRUST_STATS } from '../data/servicesData';
 import { EditableText } from './editable/EditableText';
 
@@ -110,7 +110,7 @@ export const Hero: React.FC = () => {
               {/* Studio Desk / Multi-Monitor Image */}
               <div className="relative aspect-[4/3] w-full overflow-hidden">
                 <img
-                  src="/src/assets/images/hero_design_showcase_1794358690838.jpg"
+                  src="/images/hero_design_showcase_1794358690838.jpg"
                   alt="Creative Design Studio Workspace"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                   referrerPolicy="no-referrer"

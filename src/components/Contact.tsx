@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useStudio } from '../context/StudioContext';
-import { ArrowUpRight, CheckCircle2, Mail, Phone, MessageSquare, Copy, Check, Send, AlertCircle } from 'lucide-react';
+import { CheckCircle2, Mail, Phone, MessageSquare, Copy, Check, Send, AlertCircle } from 'lucide-react';
 import { EditableText } from './editable/EditableText';
 
 export const Contact: React.FC = () => {

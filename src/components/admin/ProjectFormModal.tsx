@@ -4,18 +4,11 @@ import { useStudio } from '../../context/StudioContext';
 import { processImageFile, processVideoFile } from '../../utils/mediaStorage';
 import {
   X,
-  CheckCircle2,
   Upload,
-  Video,
-  Image as ImageIcon,
   Trash2,
-  Star,
   Play,
-  FileVideo,
   Plus,
-  AlertCircle,
   Loader2,
-  Sparkles,
   Copy
 } from 'lucide-react';
 
@@ -50,7 +43,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
   const [client, setClient] = useState(projectToEdit?.client || '');
   const [year, setYear] = useState(projectToEdit?.year || '2026');
   const [coverImage, setCoverImage] = useState(
-    projectToEdit?.image || '/src/assets/images/portfolio_web_cosmetics_1794358690539.jpg'
+    projectToEdit?.image || '/images/portfolio_web_cosmetics_1794358690539.jpg'
   );
 
   // Multi-Media Gallery (Images & Videos)
@@ -63,7 +56,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
       {
         id: `media-init-${Date.now()}`,
         type: 'image',
-        url: projectToEdit?.image || '/src/assets/images/portfolio_web_cosmetics_1794358690539.jpg',
+        url: projectToEdit?.image || '/images/portfolio_web_cosmetics_1794358690539.jpg',
         name: '대표 이미지',
         isCover: true,
       },
@@ -89,10 +82,10 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
 
   // Preset images for fast testing
   const presetImages = [
-    { label: '웹/상세페이지 (Cosmetics)', url: '/src/assets/images/portfolio_web_cosmetics_1794358690539.jpg' },
-    { label: '프로모션 키비주얼 (Tech/Audio)', url: '/src/assets/images/portfolio_promotion_tech_1794358691610.jpg' },
-    { label: '영상/숏폼 모션 (Motion/Reels)', url: '/src/assets/images/portfolio_video_motion_1794358691788.jpg' },
-    { label: '스튜디오 데스크 (Minimal Desk)', url: '/src/assets/images/hero_design_showcase_1794358690838.jpg' },
+    { label: '웹/상세페이지 (Cosmetics)', url: '/images/portfolio_web_cosmetics_1794358690539.jpg' },
+    { label: '프로모션 키비주얼 (Tech/Audio)', url: '/images/portfolio_promotion_tech_1794358691610.jpg' },
+    { label: '영상/숏폼 모션 (Motion/Reels)', url: '/images/portfolio_video_motion_1794358691788.jpg' },
+    { label: '스튜디오 데스크 (Minimal Desk)', url: '/images/hero_design_showcase_1794358690838.jpg' },
   ];
 
   // Handle Local File Upload (Images & Videos)
@@ -613,6 +606,30 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
                 className="w-full px-3.5 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-white focus:outline-none focus:border-blue-500"
               />
             </div>
+          </div>
+
+          {/* SECTION 5-2: Concept & Featured */}
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-zinc-300">디자인 콘셉트 (Concept)</label>
+              <input
+                type="text"
+                value={concept}
+                onChange={(e) => setConcept(e.target.value)}
+                placeholder="예: Natural Luxury & Clinical Purity"
+                className="w-full px-3.5 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-white focus:outline-none focus:border-blue-500"
+              />
+            </div>
+
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={featured}
+                onChange={(e) => setFeatured(e.target.checked)}
+                className="w-3.5 h-3.5 rounded accent-blue-600 cursor-pointer"
+              />
+              <span className="text-xs text-zinc-300">대표 프로젝트로 표시</span>
+            </label>
           </div>
 
           {/* SECTION 6: Tags & Tools */}

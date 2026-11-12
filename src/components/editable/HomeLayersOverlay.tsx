@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useStudio } from '../../context/StudioContext';
 import { HomeLayer } from '../../types';
 import { Trash2, GripVertical, Eye, EyeOff } from 'lucide-react';

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useStudio } from '../context/StudioContext';
-import { Layout, Video, Zap, CheckCircle2, Shield, Layers, Award, Terminal } from 'lucide-react';
+import { Layout, Video, Zap, CheckCircle2, Shield, Layers, Award } from 'lucide-react';
 
 export const About: React.FC = () => {
   const { menuContent } = useStudio();
