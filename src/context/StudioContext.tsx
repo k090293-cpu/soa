@@ -23,7 +23,13 @@ import {
   INITIAL_WORKS_CATEGORIES,
   INITIAL_ABOUT_STRENGTHS
 } from '../data/servicesData';
-import { getBlockOrder, moveWithinArray, moveToIndex } from '../utils/homeBlocks';
+import {
+  getBlockOrder,
+  getSectionOrder,
+  moveWithinArray,
+  moveToIndex,
+  moveKeyTo,
+} from '../utils/homeBlocks';
 
 interface StudioContextType {
   projects: Project[];
@@ -72,6 +78,10 @@ interface StudioContextType {
   setHomeBlockOrder: (keys: string[]) => void;
   /** KPI 카드를 임의 위치로 이동 */
   moveHomeKpi: (from: number, to: number) => void;
+  /** 홈 전체 섹션 순서 */
+  homeSectionOrder: string[];
+  moveHomeSection: (key: string, direction: 'up' | 'down') => void;
+  setHomeSectionOrder: (keys: string[]) => void;
   // 되돌리기 (Ctrl/Cmd+Z)
   undoHomeEdit: () => boolean;
   canUndo: boolean;
@@ -777,6 +787,25 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     });
   };
 
+  // 홈 전체 섹션(hero/about/works/...) 순서 --------------------------------
+  const homeSectionOrder = getSectionOrder(menuContent.home.sectionOrder);
+
+  const setHomeSectionOrder = (keys: string[]) => {
+    setMenuContent((prev) => ({ ...prev, home: { ...prev.home, sectionOrder: keys } }));
+  };
+
+  const moveHomeSection = (key: string, direction: 'up' | 'down') => {
+    setMenuContent((prev) => {
+      const order = getSectionOrder(prev.home.sectionOrder);
+      const index = order.indexOf(key);
+      if (index < 0) return prev;
+      return {
+        ...prev,
+        home: { ...prev.home, sectionOrder: moveWithinArray(order, index, direction) },
+      };
+    });
+  };
+
   // 되돌리기(Ctrl/Cmd+Z) 이력 ─────────────────────────────────────────────
   // menuContent 가 바뀔 때마다 "바뀌기 직전" 스냅샷을 쌓아 두고, 되돌리기 시 복원합니다.
   // 드래그처럼 짧은 간격의 연속 변경은 한 단계로 묶어 Ctrl+Z 한 번에 되돌아가게 합니다.
@@ -904,6 +933,9 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         moveHomeBlock,
         setHomeBlockOrder,
         moveHomeKpi,
+        homeSectionOrder,
+        moveHomeSection,
+        setHomeSectionOrder,
         undoHomeEdit,
         canUndo,
         undoDepth,

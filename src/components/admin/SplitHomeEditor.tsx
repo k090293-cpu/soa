@@ -83,6 +83,7 @@ export const SplitHomeEditor: React.FC = () => {
       {/* 실제 홈 렌더 영역 */}
       <div
         ref={scrollerRef}
+        data-editor-pane="split"
         className="relative flex-1 overflow-y-auto overflow-x-hidden bg-[var(--app-bg)]"
       >
         {/* HomePage 내부에서 HomeLayersOverlay 를 함께 렌더합니다 */}

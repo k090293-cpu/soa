@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useStudio } from '../../context/StudioContext';
 import { HomeLayer } from '../../types';
 import { Trash2, GripVertical, Eye, EyeOff } from 'lucide-react';
@@ -7,7 +7,11 @@ import { Trash2, GripVertical, Eye, EyeOff } from 'lucide-react';
  * 홈 화면(미리보기) 위에 관리자가 만든 커스텀 레이어를 그리는 오버레이.
  * - 편집 모드에서만 선택/드래그/삭제가 가능합니다.
  * - 실제 홈에서는 읽기 전용으로 그대로 노출됩니다.
- * 부모 요소는 반드시 `relative` 여야 합니다.
+ *
+ * 드래그
+ *  - 글씨 레이어 / 배지 레이어 / 이미지 레이어 모두 본체를 마우스로 잡고 끌면 이동합니다.
+ *  - pointer capture 를 걸어 커서가 레이어 밖으로 나가도 계속 따라옵니다.
+ *  - 좌표 기준은 `[data-home-canvas]` (없으면 offsetParent) 이며 x/y/width 는 그 기준 대비 %입니다.
  */
 export const HomeLayersOverlay: React.FC = () => {
   const {
@@ -21,6 +25,7 @@ export const HomeLayersOverlay: React.FC = () => {
 
   const layers = menuContent.home.layers || [];
   const [dragId, setDragId] = useState<string | null>(null);
+  const [hoverId, setHoverId] = useState<string | null>(null);
 
   // 드래그 계산에 쓰는 값은 ref 로 보관합니다.
   // (state 로 두면 pointermove 마다 리렌더가 일어나 값이 stale 해질 수 있습니다)
@@ -36,7 +41,6 @@ export const HomeLayersOverlay: React.FC = () => {
     lastY: number;
   } | null>(null);
 
-  // 레이어가 하나도 없으면 아무것도 그리지 않습니다.
   const hasLayers = layers.length > 0;
 
   // 편집 모드 종료 시 선택/드래그 해제
@@ -45,26 +49,40 @@ export const HomeLayersOverlay: React.FC = () => {
       setSelectedHomeLayerId(null);
       dragRef.current = null;
       setDragId(null);
+      setHoverId(null);
     }
   }, [isHomeInlineEditMode, setSelectedHomeLayerId]);
 
-  if (!hasLayers) return null;
-
-  const applyDrag = (clientX: number, clientY: number) => {
-    const d = dragRef.current;
-    if (!d) return;
-    const dxPct = ((clientX - d.startX) / d.boxW) * 100;
-    const dyPct = ((clientY - d.startY) / d.boxH) * 100;
-    const nextX = Math.max(-20, Math.min(120, d.originX + dxPct));
-    const nextY = Math.max(-20, Math.min(200, d.originY + dyPct));
-    // 소수 1자리로 반올림해 같은 값이면 불필요한 업데이트를 건너뜁니다.
-    const roundedX = Math.round(nextX * 10) / 10;
-    const roundedY = Math.round(nextY * 10) / 10;
-    if (roundedX === d.lastX && roundedY === d.lastY) return;
-    d.lastX = roundedX;
-    d.lastY = roundedY;
-    updateHomeLayer(d.id, { x: roundedX, y: roundedY });
+  /** 레이어 좌표의 기준이 되는 박스(홈 캔버스)를 찾습니다. */
+  const resolveCanvasRect = (el: HTMLElement): DOMRect | null => {
+    const canvas = el.closest('[data-home-canvas]') as HTMLElement | null;
+    if (canvas) {
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) return rect;
+    }
+    const parent = (el.offsetParent as HTMLElement | null) ?? document.body;
+    const rect = parent.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0 ? rect : null;
   };
+
+  const applyDrag = useCallback(
+    (clientX: number, clientY: number) => {
+      const d = dragRef.current;
+      if (!d) return;
+      const dxPct = ((clientX - d.startX) / d.boxW) * 100;
+      const dyPct = ((clientY - d.startY) / d.boxH) * 100;
+      const nextX = Math.max(-30, Math.min(130, d.originX + dxPct));
+      const nextY = Math.max(-30, Math.min(220, d.originY + dyPct));
+      // 소수 1자리로 반올림해 같은 값이면 불필요한 업데이트를 건너뜁니다.
+      const roundedX = Math.round(nextX * 10) / 10;
+      const roundedY = Math.round(nextY * 10) / 10;
+      if (roundedX === d.lastX && roundedY === d.lastY) return;
+      d.lastX = roundedX;
+      d.lastY = roundedY;
+      updateHomeLayer(d.id, { x: roundedX, y: roundedY });
+    },
+    [updateHomeLayer]
+  );
 
   const endDrag = (e?: React.PointerEvent<HTMLDivElement>) => {
     if (e) {
@@ -83,11 +101,13 @@ export const HomeLayersOverlay: React.FC = () => {
 
   const beginDrag = (
     e: React.PointerEvent<HTMLDivElement>,
-    layer: HomeLayer,
-    box: DOMRect
+    layer: HomeLayer
   ) => {
     if (!isHomeInlineEditMode) return;
     if (e.button !== 0 && e.pointerType === 'mouse') return;
+    const box = resolveCanvasRect(e.currentTarget);
+    if (!box) return;
+
     e.preventDefault();
     e.stopPropagation();
     setSelectedHomeLayerId(layer.id);
@@ -112,18 +132,40 @@ export const HomeLayersOverlay: React.FC = () => {
     }
   };
 
+  /** 레이어 본체 / 선택 프레임 공통 포인터 핸들러 */
+  const pointerProps = (layer: HomeLayer) => ({
+    onPointerDown: (e: React.PointerEvent<HTMLDivElement>) => beginDrag(e, layer),
+    onPointerMove: (e: React.PointerEvent<HTMLDivElement>) => {
+      if (!dragRef.current) return;
+      applyDrag(e.clientX, e.clientY);
+    },
+    onPointerUp: (e: React.PointerEvent<HTMLDivElement>) => endDrag(e),
+    onPointerCancel: (e: React.PointerEvent<HTMLDivElement>) => endDrag(e),
+    onLostPointerCapture: () => {
+      dragRef.current = null;
+      setDragId(null);
+    },
+  });
+
+  if (!hasLayers) return null;
+
   return (
     <>
       {layers.map((layer) => {
         if (!layer.visible && !isHomeInlineEditMode) return null;
         const isSelected = selectedHomeLayerId === layer.id;
         const isDragging = dragId === layer.id;
+        const isHovered = hoverId === layer.id;
         const isImage = layer.type === 'image';
         const isBadge = layer.type === 'badge';
+        const showFrame = isHomeInlineEditMode && (isSelected || isHovered || isDragging);
+        const typeLabel = isImage ? 'IMAGE' : isBadge ? 'BADGE' : 'TEXT';
 
         return (
           <div
             key={layer.id}
+            data-home-layer={layer.id}
+            data-layer-type={layer.type}
             className={`absolute ${
               isHomeInlineEditMode ? 'pointer-events-auto cursor-move' : 'pointer-events-none'
             } ${isSelected ? 'z-30' : 'z-20'} ${isDragging ? 'select-none' : ''}`}
@@ -137,40 +179,41 @@ export const HomeLayersOverlay: React.FC = () => {
               // 드래그 중 스크롤/줌 제스처로 이벤트가 끊기지 않도록 합니다.
               touchAction: isHomeInlineEditMode ? 'none' : undefined,
             }}
-            onPointerDown={(e) => {
-              const parent = (e.currentTarget.offsetParent as HTMLElement) || null;
-              // offsetParent 대신 실제 홈 컨테이너 크기를 기준으로 삼아
-              // 변환(transform)이 걸려 있어도 정확한 비율을 유지합니다.
-              const box = parent?.getBoundingClientRect();
-              if (box) beginDrag(e, layer, box);
+            onPointerEnter={() => {
+              if (isHomeInlineEditMode) setHoverId(layer.id);
             }}
-            onPointerMove={(e) => {
-              if (!dragRef.current) return;
-              applyDrag(e.clientX, e.clientY);
-            }}
-            onPointerUp={endDrag}
-            onPointerCancel={endDrag}
-            onLostPointerCapture={() => {
-              dragRef.current = null;
-              setDragId(null);
-            }}
+            onPointerLeave={() =>
+              setHoverId((prev) => (prev === layer.id ? null : prev))
+            }
             onClick={(e) => {
               if (!isHomeInlineEditMode) return;
               e.stopPropagation();
               setSelectedHomeLayerId(layer.id);
             }}
+            {...pointerProps(layer)}
           >
-            {/* 편집 모드 선택 테두리 & 핸들 */}
+            {/* 편집 모드 선택/호버 프레임 — 테두리를 잡아도 드래그됩니다 */}
             {isHomeInlineEditMode && (
               <div
-                className={`absolute -inset-1.5 rounded-lg border-2 border-dashed pointer-events-none ${
-                  isSelected ? 'border-blue-500' : 'border-blue-500/45'
+                className={`absolute -inset-1.5 rounded-lg border-2 border-dashed ${
+                  showFrame ? 'pointer-events-auto' : 'pointer-events-none'
+                } ${
+                  isSelected
+                    ? 'border-blue-500 bg-blue-500/5'
+                    : isDragging
+                    ? 'border-blue-400'
+                    : 'border-blue-500/45'
                 }`}
+                title={`${typeLabel} · 잡고 드래그하면 이동합니다`}
+                {...pointerProps(layer)}
               >
-                <span className="absolute -top-3 left-0 flex items-center gap-1 bg-blue-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded whitespace-nowrap">
-                  <GripVertical className="w-2.5 h-2.5" />
-                  {isImage ? 'IMAGE' : isBadge ? 'BADGE' : 'TEXT'} · 드래그로 이동
-                </span>
+                {showFrame && (
+                  <span className="absolute -top-3 left-0 flex items-center gap-1 bg-blue-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded whitespace-nowrap pointer-events-none">
+                    <GripVertical className="w-2.5 h-2.5" />
+                    {typeLabel} · 드래그로 이동
+                  </span>
+                )}
+
                 <div className="absolute -top-3 right-0 flex items-center gap-1 pointer-events-auto">
                   <button
                     type="button"
@@ -201,7 +244,7 @@ export const HomeLayersOverlay: React.FC = () => {
               </div>
             )}
 
-            {/* 실제 레이어 콘텐츠 */}
+            {/* 실제 레이어 콘텐츠 — pointer-events-none 이라 어떤 지점을 잡아도 부모가 드래그 담당 */}
             {isImage ? (
               <img
                 src={layer.content}

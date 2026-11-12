@@ -173,6 +173,8 @@ export interface HomeContent {
   hiddenBlocks?: string[];
   /** 히어로 좌측 블록 표시 순서 (미지정 시 기본 순서) */
   blockOrder?: string[];
+  /** 홈 전체 섹션 표시 순서 (hero/about/works/...) */
+  sectionOrder?: string[];
   /** 대표 이미지 카드 위치: 우측 컬럼 / 히어로 하단 전체폭 */
   heroMediaPosition?: 'right' | 'bottom';
 }
