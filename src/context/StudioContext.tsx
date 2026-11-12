@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import {
   Project,
   ProjectInquiry,
@@ -23,6 +23,7 @@ import {
   INITIAL_WORKS_CATEGORIES,
   INITIAL_ABOUT_STRENGTHS
 } from '../data/servicesData';
+import { getBlockOrder, moveWithinArray, moveToIndex } from '../utils/homeBlocks';
 
 interface StudioContextType {
   projects: Project[];
@@ -59,6 +60,22 @@ interface StudioContextType {
   deleteHomeLayer: (id: string) => void;
   moveHomeLayer: (index: number, direction: 'up' | 'down') => void;
   resetHomeLayers: () => void;
+  // 홈 블록(킥커/버튼/이미지카드/KPI 등) 삭제·복원·이동
+  /** 편집 모드에서 숨긴 블록 키 목록 */
+  hiddenHomeBlocks: string[];
+  /** 히어로 좌측 블록 표시 순서 */
+  homeBlockOrder: string[];
+  deleteHomeBlock: (key: string) => void;
+  restoreHomeBlock: (key: string) => void;
+  restoreAllHomeBlocks: () => void;
+  moveHomeBlock: (key: string, direction: 'up' | 'down') => void;
+  setHomeBlockOrder: (keys: string[]) => void;
+  /** KPI 카드를 임의 위치로 이동 */
+  moveHomeKpi: (from: number, to: number) => void;
+  // 되돌리기 (Ctrl/Cmd+Z)
+  undoHomeEdit: () => boolean;
+  canUndo: boolean;
+  undoDepth: number;
   /** 홈 위에서 직접 글자를 수정할 수 있는 편집 모드 여부 */
   isHomeInlineEditMode: boolean;
   setIsHomeInlineEditMode: (on: boolean) => void;
@@ -713,6 +730,124 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }));
   };
 
+  // 홈 블록(킥커/버튼/이미지카드/KPI) 삭제·복원·순서 ---------------------------
+  const hiddenHomeBlocks = menuContent.home.hiddenBlocks || [];
+  const homeBlockOrder = getBlockOrder(menuContent.home.blockOrder);
+
+  const deleteHomeBlock = (key: string) => {
+    setMenuContent((prev) => {
+      const current = prev.home.hiddenBlocks || [];
+      if (current.includes(key)) return prev;
+      return { ...prev, home: { ...prev.home, hiddenBlocks: [...current, key] } };
+    });
+  };
+
+  const restoreHomeBlock = (key: string) => {
+    setMenuContent((prev) => {
+      const current = prev.home.hiddenBlocks || [];
+      if (!current.includes(key)) return prev;
+      return { ...prev, home: { ...prev.home, hiddenBlocks: current.filter((k) => k !== key) } };
+    });
+  };
+
+  const restoreAllHomeBlocks = () => {
+    setMenuContent((prev) => ({ ...prev, home: { ...prev.home, hiddenBlocks: [] } }));
+  };
+
+  const setHomeBlockOrder = (keys: string[]) => {
+    setMenuContent((prev) => ({ ...prev, home: { ...prev.home, blockOrder: keys } }));
+  };
+
+  const moveHomeBlock = (key: string, direction: 'up' | 'down') => {
+    setMenuContent((prev) => {
+      const order = getBlockOrder(prev.home.blockOrder);
+      const index = order.indexOf(key);
+      if (index < 0) return prev;
+      return {
+        ...prev,
+        home: { ...prev.home, blockOrder: moveWithinArray(order, index, direction) },
+      };
+    });
+  };
+
+  const moveHomeKpi = (from: number, to: number) => {
+    setMenuContent((prev) => {
+      if (from === to) return prev;
+      return { ...prev, home: { ...prev.home, kpis: moveToIndex(prev.home.kpis, from, to) } };
+    });
+  };
+
+  // 되돌리기(Ctrl/Cmd+Z) 이력 ─────────────────────────────────────────────
+  // menuContent 가 바뀔 때마다 "바뀌기 직전" 스냅샷을 쌓아 두고, 되돌리기 시 복원합니다.
+  // 드래그처럼 짧은 간격의 연속 변경은 한 단계로 묶어 Ctrl+Z 한 번에 되돌아가게 합니다.
+  const historyRef = useRef<SiteMenuContent[]>([]);
+  const prevContentRef = useRef<SiteMenuContent>(menuContent);
+  const skipHistoryRef = useRef(false);
+  const lastPushAtRef = useRef(0);
+  const [undoDepth, setUndoDepth] = useState(0);
+
+  useEffect(() => {
+    const prev = prevContentRef.current;
+    const skipped = skipHistoryRef.current;
+    // skip 플래그는 어떤 경로로 끝나든 반드시 소비합니다.
+    // (조기 return 에서 해제하지 않으면 다음 실제 편집이 이력에서 누락됩니다)
+    skipHistoryRef.current = false;
+
+    if (prev === menuContent) return;
+    prevContentRef.current = menuContent;
+
+    if (skipped) return;
+
+    const now = Date.now();
+    // 500ms 이내 연속 변경(레이어 드래그 등)은 하나의 되돌리기 단계로 병합
+    if (now - lastPushAtRef.current < 500 && historyRef.current.length > 0) {
+      lastPushAtRef.current = now;
+      return;
+    }
+
+    historyRef.current.push(prev);
+    if (historyRef.current.length > 80) historyRef.current.shift();
+    lastPushAtRef.current = now;
+    setUndoDepth(historyRef.current.length);
+  }, [menuContent]);
+
+  const undoHomeEdit = (): boolean => {
+    const prev = historyRef.current.pop();
+    if (!prev) return false;
+    skipHistoryRef.current = true;
+    prevContentRef.current = prev;
+    lastPushAtRef.current = 0;
+    setMenuContent(prev);
+    setUndoDepth(historyRef.current.length);
+    return true;
+  };
+
+  const canUndo = undoDepth > 0;
+
+  // Ctrl/Cmd+Z 로 홈 편집 되돌리기 (편집 모드일 때만 동작)
+  useEffect(() => {
+    if (!isHomeInlineEditMode || !isAdminLoggedIn) return;
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      const isUndoKey = (e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z';
+      if (!isUndoKey) return;
+
+      // contentEditable 안에서의 브라우저 기본 undo 는 그대로 두지 않고,
+      // 홈 편집 이력을 우선 사용합니다. (입력 중이면 먼저 blur 로 커밋)
+      const active = document.activeElement as HTMLElement | null;
+      if (active?.isContentEditable) {
+        active.blur();
+      }
+
+      if (undoHomeEdit()) {
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isHomeInlineEditMode, isAdminLoggedIn]);
+
   const scrollToSection = (sectionId: string) => {
     const el = document.getElementById(sectionId);
     if (el) {
@@ -761,6 +896,17 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         deleteHomeLayer,
         moveHomeLayer,
         resetHomeLayers,
+        hiddenHomeBlocks,
+        homeBlockOrder,
+        deleteHomeBlock,
+        restoreHomeBlock,
+        restoreAllHomeBlocks,
+        moveHomeBlock,
+        setHomeBlockOrder,
+        moveHomeKpi,
+        undoHomeEdit,
+        canUndo,
+        undoDepth,
         isHomeInlineEditMode,
         setIsHomeInlineEditMode,
         selectedHomeLayerId,

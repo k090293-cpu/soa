@@ -144,6 +144,17 @@ export interface HomeLayer {
   bold?: boolean;
 }
 
+/** 홈에서 삭제·이동할 수 있는 블록 키 */
+export type HomeBlockKey =
+  | 'heroKicker'
+  | 'heroHeadline'
+  | 'heroSubheadline'
+  | 'capabilities'
+  | 'heroActions'
+  | 'heroTrust'
+  | 'heroMedia'
+  | 'kpis';
+
 export interface HomeContent {
   heroKicker: string;
   heroHeadline: string;
@@ -158,6 +169,12 @@ export interface HomeContent {
   serviceSubtitle?: string;
   /** 홈 위에 얹는 커스텀 레이어 목록 */
   layers?: HomeLayer[];
+  /** 편집 모드에서 '삭제'한 블록 키 목록 (완전 삭제가 아니라 숨김) */
+  hiddenBlocks?: string[];
+  /** 히어로 좌측 블록 표시 순서 (미지정 시 기본 순서) */
+  blockOrder?: string[];
+  /** 대표 이미지 카드 위치: 우측 컬럼 / 히어로 하단 전체폭 */
+  heroMediaPosition?: 'right' | 'bottom';
 }
 
 export interface AboutContent {

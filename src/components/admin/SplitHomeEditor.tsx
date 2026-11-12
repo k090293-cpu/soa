@@ -73,8 +73,9 @@ export const SplitHomeEditor: React.FC = () => {
         <div className="shrink-0 px-3 py-1.5 bg-blue-950/40 border-b border-blue-900/40 text-[10px] text-blue-300 flex items-center gap-1.5">
           <Type className="w-3 h-3 shrink-0" />
           <span>
-            점선이 표시된 글자를 클릭해 수정하세요 · 레이어는 테두리를 잡고 드래그하면 이동합니다 ·
-            수정 후 바깥을 클릭하면 자동 저장됩니다
+            점선 글자를 클릭해 수정 · 블록 좌상단 그립을 드래그하면 순서가 바뀝니다 · 블록 우측 상단
+            휴지통으로 삭제 · <span className="font-bold text-blue-200">Ctrl+Z</span> 로 되돌리기 · 바깥
+            클릭 시 자동 저장
           </span>
         </div>
       )}
