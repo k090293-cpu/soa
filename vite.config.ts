@@ -17,6 +17,15 @@ export default defineConfig(() => {
       hmr: process.env.DISABLE_HMR !== 'true',
       // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
+      // 샌드박스/프리뷰 도메인에서 접속할 때 Vite 가 403("Blocked request") 으로
+      // 막지 않도록 허용 호스트를 지정합니다. (앞의 점은 하위 도메인 전체 허용)
+      allowedHosts: [
+        'localhost',
+        '.sandbox.novita.ai',
+        '.e2b.dev',
+        '.genspark.ai',
+        '.trycloudflare.com',
+      ],
     },
   };
 });
