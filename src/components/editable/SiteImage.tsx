@@ -82,13 +82,14 @@ export const SiteImage: React.FC<SiteImageProps> = ({
             tabIndex={-1}
           />
 
-          {/* 편집 모드 오버레이 — 호버 시 이미지 교체 버튼 */}
+          {/* 편집 모드 오버레이 — 호버 시 이미지 교체 버튼
+              ⚠️ wrapper 에 pointer-events:none 을 주면 hover 자체가 발생하지 않아
+                 버튼이 영영 보이지 않습니다. 컨트롤 영역만 auto 로 둡니다. */}
           <span
             data-ui="imgctl"
             className="absolute inset-0 z-20 flex items-start justify-end gap-1 p-1.5 opacity-0 hover:opacity-100 focus-within:opacity-100 transition-opacity"
-            style={{ pointerEvents: 'none' }}
           >
-            <span style={{ pointerEvents: 'auto' }} className="flex items-center gap-1">
+            <span className="flex items-center gap-1" style={{ pointerEvents: 'auto' }}>
               <button
                 type="button"
                 onPointerDown={(e) => e.stopPropagation()}
