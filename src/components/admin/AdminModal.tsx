@@ -76,6 +76,8 @@ export const AdminModal: React.FC = () => {
   // Project form modal state
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [isProjectFormOpen, setIsProjectFormOpen] = useState(false);
+  // 새 프로젝트 폼을 열 때 기본 선택될 카테고리 (폼을 연 시점의 필터를 그대로 기억)
+  const [formDefaultCategory, setFormDefaultCategory] = useState<string | undefined>(undefined);
 
   // 포트폴리오 카테고리별 필터 상태 ('all' | 카테고리 key)
   const [projectCategoryFilter, setProjectCategoryFilter] = useState<string>('all');
@@ -186,11 +188,16 @@ export const AdminModal: React.FC = () => {
 
   const handleOpenAddProject = () => {
     setEditingProject(null);
+    // '카테고리별 포트폴리오 관리' 에서 특정 카테고리를 클릭해 둔 상태라면
+    // 새 프로젝트 폼의 카테고리도 그 값으로 미리 선택되게 합니다.
+    setFormDefaultCategory(projectCategoryFilter === 'all' ? undefined : projectCategoryFilter);
     setIsProjectFormOpen(true);
   };
 
   const handleOpenEditProject = (p: Project) => {
     setEditingProject(p);
+    // 수정 모드에서는 기존 카테고리를 그대로 쓰므로 기본값을 비웁니다.
+    setFormDefaultCategory(undefined);
     setIsProjectFormOpen(true);
   };
 
@@ -1043,6 +1050,7 @@ export const AdminModal: React.FC = () => {
       {isProjectFormOpen && (
         <ProjectFormModal
           projectToEdit={editingProject}
+          defaultCategory={formDefaultCategory}
           onSave={handleSaveProjectForm}
           onClose={() => setIsProjectFormOpen(false)}
         />

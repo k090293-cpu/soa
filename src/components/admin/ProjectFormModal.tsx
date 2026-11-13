@@ -16,12 +16,19 @@ interface ProjectFormModalProps {
   projectToEdit?: Project | null;
   onSave: (data: Omit<Project, 'id'>) => void;
   onClose: () => void;
+  /**
+   * 새 프로젝트 등록 시 기본으로 선택될 카테고리 key.
+   * '카테고리별 포트폴리오 관리' 에서 특정 카테고리를 클릭한 뒤 등록하면
+   * 그 카테고리가 그대로 선택된 상태로 폼이 열립니다.
+   */
+  defaultCategory?: string;
 }
 
 export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
   projectToEdit,
   onSave,
   onClose,
+  defaultCategory,
 }) => {
   const { menuContent, projects } = useStudio();
 
@@ -37,9 +44,17 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
   }, [menuContent.worksCategories]);
 
   const [title, setTitle] = useState(projectToEdit?.title || '');
-  const [category, setCategory] = useState<ProjectCategory>(
-    projectToEdit?.category || categories[0]?.key || 'web'
-  );
+  const [category, setCategory] = useState<ProjectCategory>(() => {
+    // 1) 수정 모드: 기존 프로젝트 카테고리 유지
+    if (projectToEdit?.category) return projectToEdit.category;
+    // 2) 새 프로젝트: 관리자가 '카테고리별 관리'에서 클릭해 둔 카테고리를 그대로 씁니다.
+    //    (그 카테고리가 실제 목록에 존재할 때만)
+    if (defaultCategory && categories.some((c) => c.key === defaultCategory)) {
+      return defaultCategory as ProjectCategory;
+    }
+    // 3) 그 외: 첫 번째 카테고리
+    return (categories[0]?.key as ProjectCategory) || 'web';
+  });
   const [client, setClient] = useState(projectToEdit?.client || '');
   const [year, setYear] = useState(projectToEdit?.year || '2026');
   const [coverImage, setCoverImage] = useState(
