@@ -12,7 +12,22 @@ import { ProjectDetailModal } from './components/ProjectDetailModal';
 import { AdminModal } from './components/admin/AdminModal';
 
 const AppContent: React.FC = () => {
-  const { currentPage, activeProjectDetail, setActiveProjectDetail } = useStudio();
+  const { currentPage, activeProjectDetail, setActiveProjectDetail, isHydrated } = useStudio();
+
+  // 저장본에 IndexedDB 미디어 참조(idb-media://)가 남아 있으면, 실제 이미지로 복원되기 전에
+  // <img src="idb-media://..."> 가 렌더되어 브라우저가 알 수 없는 스킴 오류를 냅니다.
+  // 복원이 끝날 때까지 아주 짧게 대기 화면을 보여 줍니다.
+  // (참조가 없는 일반 방문자는 isHydrated 가 처음부터 true 라 이 화면을 보지 않습니다)
+  if (!isHydrated) {
+    return (
+      <div className="min-h-screen bg-[var(--app-bg)] text-[var(--app-fg)] flex items-center justify-center font-sans">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-6 h-6 rounded-full border-2 border-zinc-600 border-t-blue-500 animate-spin" />
+          <p className="text-xs text-zinc-400 tracking-wide">이미지 불러오는 중…</p>
+        </div>
+      </div>
+    );
+  }
 
   const renderCurrentPage = () => {
     switch (currentPage) {

@@ -63,6 +63,8 @@ export const AdminModal: React.FC = () => {
     setTheme,
     isSplitEditorOpen,
     setIsSplitEditorOpen,
+    storageWarning,
+    dismissStorageWarning,
   } = useStudio();
 
   // Login form state
@@ -307,6 +309,31 @@ export const AdminModal: React.FC = () => {
               </button>
             </div>
           </div>
+
+          {/* 자동 저장 실패 경고 ─────────────────────────────────────────────
+              예전에는 저장 실패가 콘솔에만 남아 관리자가 알 수 없었습니다.
+              이제 화면 상단에 명확히 표시합니다. */}
+          {isAdminLoggedIn && storageWarning && (
+            <div
+              data-ui="storage-warning"
+              className="flex items-start gap-2.5 px-6 py-3 bg-red-950/60 border-b border-red-800/70 text-red-200 shrink-0"
+            >
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-red-400" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-red-100">자동 저장 실패</p>
+                <p className="text-[11px] leading-relaxed text-red-200/90 mt-0.5">
+                  {storageWarning.message}
+                </p>
+              </div>
+              <button
+                onClick={dismissStorageWarning}
+                className="p-1 rounded-md text-red-300 hover:text-white hover:bg-red-900/60 cursor-pointer shrink-0"
+                title="경고 닫기"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
 
           {/* If NOT logged in: Password entry screen */}
           {!isAdminLoggedIn ? (
