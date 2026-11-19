@@ -1,0 +1,39 @@
+# Netlify 정적 배포 설정
+#
+# 이 사이트는 Netlify 순수 정적 호스팅으로 운영합니다.
+# 서버(Express)가 없으므로 관리자 인증은 브라우저 로컬 검증(PBKDF2)으로 동작하고,
+# 편집 내용은 방문자 브라우저(localStorage)에만 저장됩니다.
+#
+# build:static 은 VITE_STATIC_SITE=1 로 빌드해 /api 요청을 아예 보내지 않습니다.
+# (서버가 없는 곳에서 /api/* 가 404 를 뱉어 콘솔이 에러로 도배되는 것을 막습니다)
+[build]
+  command = "npm run build:static"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# SPA 라우팅: 존재하지 않는 경로는 index.html 로 돌려줍니다.
+# 단, /api/* 와 /media/* 는 제외해 정적 배포에서도 404 가 명확히 보이게 합니다.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  force = false
+
+# 정적 자산은 오래 캐시합니다. (파일명에 해시가 포함됨)
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/images/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"

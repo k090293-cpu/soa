@@ -77,7 +77,7 @@ const sessionSecret = await loadSessionSecret(DATA_DIR);
  *     → 일치하면 디스크에 쓰지 않으므로 재시작마다 불필요한 쓰기가 발생하지 않습니다.
  *  2) ADMIN_PASSWORD 가 비어 있고 저장된 해시가 있으면 그것을 그대로 사용합니다.
  *     (`npm run set-password` 로 관리하는 방식 — 이 경우 환경변수를 비워 두세요)
- *  3) 둘 다 없으면 최초 1회 기본값(1012)으로 만들고 강하게 경고합니다.
+ *  3) 둘 다 없으면 최초 1회 기본값(9392)으로 만들고 강하게 경고합니다.
  */
 async function ensureAdminPassword() {
   const envPassword = (process.env.ADMIN_PASSWORD || '').trim();
@@ -103,11 +103,11 @@ async function ensureAdminPassword() {
 
   // 2) 환경변수가 없고 저장된 해시가 있으면 그대로 사용합니다.
   if (hasStored) {
-    // 저장된 값이 아직 기본값(1012)이면 운영 사고로 이어지므로 경고합니다.
-    if (await verifyPassword('1012', creds.passwordHash)) {
+    // 저장된 값이 아직 기본값(9392)이면 운영 사고로 이어지므로 경고합니다.
+    if (await verifyPassword('9392', creds.passwordHash)) {
       console.warn(
         '\n' +
-          '⚠️  관리자 비밀번호가 아직 기본값(1012)입니다.\n' +
+          '⚠️  관리자 비밀번호가 아직 기본값(9392)입니다.\n' +
           '    다음 중 하나로 반드시 변경하세요:\n' +
           '      1) 배포 환경변수에 ADMIN_PASSWORD=새비밀번호 설정 후 재시작\n' +
           '      2) npm run set-password -- 새비밀번호\n'
@@ -118,12 +118,12 @@ async function ensureAdminPassword() {
 
   // 3) 아무 설정도 없는 최초 기동 → 기본값으로 생성하고 경고합니다.
   await credentialsStore.write({
-    passwordHash: await hashPassword('1012'),
+    passwordHash: await hashPassword('9392'),
     updatedAt: new Date().toISOString(),
   });
   console.warn(
     '\n' +
-      '⚠️  관리자 비밀번호가 기본값(1012)으로 설정되었습니다.\n' +
+      '⚠️  관리자 비밀번호가 기본값(9392)으로 설정되었습니다.\n' +
       '    실제 운영 전에 반드시 다음 중 하나를 수행하세요:\n' +
       '      1) 배포 환경변수에 ADMIN_PASSWORD=새비밀번호 설정 후 재시작\n' +
       '      2) npm run set-password -- 새비밀번호\n'

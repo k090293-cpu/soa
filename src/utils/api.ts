@@ -24,15 +24,32 @@ export interface LoginResult {
   message?: string;
   /** 429 응답 시 대기해야 하는 초 */
   retryAfter?: number;
+  /**
+   * 서버에 아예 닿지 못한 경우(정적 호스팅 / 네트워크 오류).
+   * 이때만 호출한 쪽이 브라우저 로컬 검증으로 한 번 더 시도합니다.
+   */
+  offline?: boolean;
 }
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
+
+/**
+ * 정적 배포 전용 빌드인지 여부.
+ *
+ * Netlify 처럼 서버가 없는 곳에 배포하면 /api/* 요청이 무조건 404 가 됩니다.
+ * 그 404 는 브라우저 콘솔에 "Failed to load resource" 로 남아 방문자에게
+ * 사이트가 고장난 것처럼 보입니다. 그래서 정적 빌드에서는 요청 자체를 보내지 않습니다.
+ * (빌드 명령: `npm run build` = 정적 / `npm run build:node` = 서버 포함)
+ */
+const STATIC_SITE = import.meta.env.VITE_STATIC_SITE === '1';
 
 /**
  * JSON 요청을 보냅니다. 네트워크 실패/비 JSON 응답은 null 로 흡수합니다.
  * (서버가 없는 정적 배포에서 콘솔이 에러로 도배되지 않게 하려는 목적도 있습니다)
  */
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T | null> {
+  // 정적 배포 빌드에서는 서버가 없으므로 요청을 보내지 않습니다. (404 콘솔 잡음 방지)
+  if (STATIC_SITE) return null;
   try {
     const res = await fetch(path, {
       credentials: 'same-origin',
@@ -76,7 +93,9 @@ export const api = {
     projects: Project[];
     menuContent: SiteMenuContent;
     config: StudioConfig;
-  }): Promise<{ ok: boolean; message?: string; unauthorized?: boolean }> {
+  }): Promise<{ ok: boolean; message?: string; unauthorized?: boolean; offline?: boolean }> {
+    // 정적 배포 빌드에는 저장할 서버가 없습니다.
+    if (STATIC_SITE) return { ok: false, offline: true, message: '정적 배포 모드에서는 서버 저장을 사용하지 않습니다.' };
     try {
       const res = await fetch('/api/content', {
         method: 'PUT',
@@ -105,6 +124,9 @@ export const api = {
 
   /** 관리자 로그인 (비밀번호는 서버에서만 검증됩니다). */
   async login(password: string): Promise<LoginResult> {
+    // 정적 배포 빌드에서는 서버가 없으므로 바로 오프라인으로 알립니다.
+    // (호출한 쪽이 브라우저 로컬 검증으로 넘어갑니다)
+    if (STATIC_SITE) return { ok: false, offline: true, message: '서버에 연결할 수 없습니다.' };
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
@@ -124,18 +146,23 @@ export const api = {
         };
       }
       if (res.status === 404 || !data) {
-        return { ok: false, message: '서버에 연결할 수 없습니다. 관리자 기능을 사용하려면 서버가 실행 중이어야 합니다.' };
+        return {
+          ok: false,
+          offline: true,
+          message: '서버에 연결할 수 없습니다.',
+        };
       }
       if (!res.ok) {
         return { ok: false, message: data?.message || '비밀번호가 일치하지 않습니다.' };
       }
       return { ok: true };
     } catch {
-      return { ok: false, message: '서버에 연결할 수 없습니다. 네트워크 상태를 확인해 주세요.' };
+      return { ok: false, offline: true, message: '서버에 연결할 수 없습니다.' };
     }
   },
 
   async logout(): Promise<void> {
+    if (STATIC_SITE) return;
     try {
       await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
     } catch {
@@ -147,6 +174,9 @@ export const api = {
   async createInquiry(
     payload: Record<string, unknown>
   ): Promise<{ ok: boolean; message?: string; offline?: boolean }> {
+    if (STATIC_SITE) {
+      return { ok: false, offline: true, message: '현재 서버에 연결할 수 없습니다. 아래 채널로 직접 연락해 주세요.' };
+    }
     try {
       const res = await fetch('/api/inquiries', {
         method: 'POST',
@@ -201,6 +231,7 @@ export const api = {
     id: string,
     patch: { status?: InquiryStatus; adminNote?: string }
   ): Promise<boolean> {
+    if (STATIC_SITE) return false;
     try {
       const res = await fetch(`/api/inquiries/${encodeURIComponent(id)}`, {
         method: 'PATCH',
@@ -215,6 +246,7 @@ export const api = {
   },
 
   async deleteInquiry(id: string): Promise<boolean> {
+    if (STATIC_SITE) return false;
     try {
       const res = await fetch(`/api/inquiries/${encodeURIComponent(id)}`, {
         method: 'DELETE',

@@ -34,6 +34,12 @@ import {
 } from '../utils/homeBlocks';
 import { offloadMedia, hydrateMedia, containsMediaRef } from '../utils/mediaVault';
 import { api } from '../utils/api';
+import {
+  verifyLocalPassword,
+  hasLocalAdminSession,
+  startLocalAdminSession,
+  clearLocalAdminSession,
+} from '../utils/localAdmin';
 
 interface StudioContextType {
   projects: Project[];
@@ -402,8 +408,15 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (cancelled) return;
 
       // 서버가 응답하면 "서버 모드" 입니다. 실패하면 정적 배포 모드로 남습니다.
-      setIsServerOnline(remote !== null);
-      setIsAdminLoggedIn(authenticated);
+      const online = remote !== null;
+      setIsServerOnline(online);
+      /*
+       * 로그인 판정
+       *  1) 서버가 살아 있으면 서버 세션(HttpOnly 쿠키)이 유일한 근거입니다.
+       *  2) 서버가 없는 정적 배포에서는 서버 로그인 자체가 불가능하므로,
+       *     브라우저에 남아 있는 로컬 관리자 세션(12시간)을 확인합니다.
+       */
+      setIsAdminLoggedIn(online ? authenticated : hasLocalAdminSession());
 
       if (remote) {
         // 부트스트랩은 최초 렌더 직후 1회만 실행되고, 그 전에는 사용자가 아무것도 편집할 수 없습니다.
@@ -646,14 +659,45 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setTheme(theme === 'dark' ? 'light' : 'dark');
   };
 
-  // Admin Login — 비밀번호 검증은 서버에서만 이루어집니다.
-  // (예전에는 '1012' 가 프론트엔드 번들에 그대로 들어 있어 누구나 열어볼 수 있었습니다)
+  /**
+   * 관리자 로그인.
+   *
+   * [두 가지 경로]
+   *  1순위 — 서버가 살아 있으면 서버에서 검증합니다(scrypt 해시, HttpOnly 세션 쿠키).
+   *  2순위 — 서버가 없으면(정적 호스팅) 브라우저에서 PBKDF2 해시로 검증합니다.
+   *          이 경로는 편의를 위한 잠금이며 보안 경계가 아닙니다(개발자 도구로 우회 가능).
+   *          비밀번호 평문은 번들에 들어가지 않고 해시만 들어갑니다.
+   */
   const loginAdmin = async (password: string): Promise<{ ok: boolean; message?: string }> => {
+    // 서버가 없는 것이 이미 확인된 경우 → 로컬 검증으로 바로 갑니다.
+    if (!isServerOnline) {
+      const valid = await verifyLocalPassword(password);
+      if (valid) {
+        startLocalAdminSession();
+        setIsAdminLoggedIn(true);
+        return { ok: true };
+      }
+      return { ok: false, message: '비밀번호가 일치하지 않습니다.' };
+    }
+
     const result = await api.login(password);
     if (result.ok) {
       setIsAdminLoggedIn(true);
       return { ok: true };
     }
+
+    // 서버에 닿지 않는 경우(오프라인/네트워크 오류)에만 로컬 검증으로 한 번 더 시도합니다.
+    if (result.offline) {
+      setIsServerOnline(false);
+      const valid = await verifyLocalPassword(password);
+      if (valid) {
+        startLocalAdminSession();
+        setIsAdminLoggedIn(true);
+        return { ok: true };
+      }
+      return { ok: false, message: '비밀번호가 일치하지 않습니다.' };
+    }
+
     return { ok: false, message: result.message || '비밀번호가 일치하지 않습니다.' };
   };
 
@@ -664,6 +708,7 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setSelectedHomeLayerId(null);
     setIsSplitEditorOpen(false);
     setIsAdminModalOpen(false);
+    clearLocalAdminSession();
     await api.logout();
   };
 
