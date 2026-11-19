@@ -8,6 +8,8 @@
     "dev:web": "vite --port=3000 --host=0.0.0.0",
     "dev:api": "node server/index.js",
     "build": "vite build",
+    "build:static": "VITE_STATIC_SITE=1 vite build",
+    "build:node": "vite build",
     "start": "node server/index.js",
     "preview": "vite preview",
     "clean": "rm -rf dist",

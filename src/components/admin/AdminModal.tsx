@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useStudio } from '../../context/StudioContext';
-import { Project, InquiryStatus } from '../../types';
+import { Project } from '../../types';
 import { ProjectFormModal } from './ProjectFormModal';
 import { MenuContentEditor } from './MenuContentEditor';
 import { LayerPanel } from './LayerPanel';
@@ -16,8 +16,6 @@ import {
   Check,
   RotateCcw,
   Settings,
-  Briefcase,
-  Inbox,
   LogOut,
   ExternalLink,
   ShieldCheck,
@@ -34,7 +32,8 @@ import {
   History,
   Sun,
   Moon,
-  Palette
+  Palette,
+  Briefcase
 } from 'lucide-react';
 
 export const AdminModal: React.FC = () => {
@@ -45,7 +44,6 @@ export const AdminModal: React.FC = () => {
     loginAdmin,
     logoutAdmin,
     projects,
-    inquiries,
     config,
     menuContent,
     addProject,
@@ -56,8 +54,6 @@ export const AdminModal: React.FC = () => {
     restoreProjectsFromBackup,
     deleteBackup,
     backupInfo,
-    updateInquiryStatus,
-    deleteInquiry,
     updateConfig,
     theme,
     setTheme,
@@ -75,7 +71,7 @@ export const AdminModal: React.FC = () => {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   // Tabs
-  const [activeTab, setActiveTab] = useState<'content' | 'preview' | 'layers' | 'projects' | 'inquiries' | 'settings'>('content');
+  const [activeTab, setActiveTab] = useState<'content' | 'preview' | 'layers' | 'projects' | 'settings'>('content');
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
 
   // Project form modal state
@@ -119,9 +115,6 @@ export const AdminModal: React.FC = () => {
   const [phoneInput, setPhoneInput] = useState(config.phone);
   const [kakaoInput, setKakaoInput] = useState(config.kakao);
   const [settingsSaved, setSettingsSaved] = useState(false);
-
-  // Copy contact feedback
-  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // 포트폴리오 백업/복원 피드백
   const [backupFeedback, setBackupFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
@@ -184,11 +177,6 @@ export const AdminModal: React.FC = () => {
     }
   };
 
-  const handleCopyContact = (id: string, text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
-  };
 
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
@@ -243,13 +231,6 @@ export const AdminModal: React.FC = () => {
     }
     setIsProjectFormOpen(false);
     setEditingProject(null);
-  };
-
-  const statusColors: Record<InquiryStatus, string> = {
-    '신규': 'bg-blue-950/60 text-blue-400 border-blue-800',
-    '검토중': 'bg-amber-950/60 text-amber-400 border-amber-800',
-    '상담완료': 'bg-purple-950/60 text-purple-400 border-purple-800',
-    '계약체결': 'bg-emerald-950/60 text-emerald-400 border-emerald-800',
   };
 
   return (
@@ -359,18 +340,19 @@ export const AdminModal: React.FC = () => {
               <div className="space-y-1.5">
                 <h4 className="text-xl font-bold text-white">관리자 인증이 필요합니다</h4>
                 <p className="text-xs text-zinc-400">
-                  포트폴리오 수정 및 접수된 견적 문의 조회를 위해 관리자 비밀번호를 입력하세요.
+                  포트폴리오 수정과 사이트 설정 변경을 위해 관리자 비밀번호를 입력하세요.
                 </p>
               </div>
 
-              {/* 서버가 없는 정적 배포에서는 로그인 자체가 불가능하므로 미리 알려 줍니다.
-                  (예전에는 "비밀번호가 일치하지 않습니다" 라는 잘못된 안내가 떴습니다) */}
+              {/* 정적 배포 안내: 로그인은 되지만 편집 내용은 이 브라우저에만 저장됩니다.
+                  (예전 문구는 "관리자 기능을 사용할 수 없다" 였는데, 이제 로컬 인증으로 동작합니다) */}
               {!isServerOnline && (
-                <div className="p-3.5 rounded-xl bg-amber-950/40 border border-amber-800/60 text-left text-[11px] text-amber-200 leading-relaxed">
-                  <p className="font-bold mb-1">관리자 기능을 사용할 수 없는 환경입니다</p>
+                <div className="p-3.5 rounded-xl bg-blue-950/40 border border-blue-900/60 text-left text-[11px] text-blue-200 leading-relaxed">
+                  <p className="font-bold mb-1">정적 배포 모드로 동작 중입니다</p>
                   <p>
-                    현재 사이트는 정적 호스팅으로 배포되어 서버가 실행되지 않습니다. 관리자 로그인·저장·문의
-                    수신은 Node 서버로 배포했을 때만 동작합니다.
+                    이 사이트는 Netlify 정적 호스팅이라 별도 서버가 없습니다. 관리자 로그인과 편집은 정상
+                    동작하지만, 변경 내용은 <strong className="text-blue-100">이 브라우저에만</strong> 저장되며
+                    다른 기기·방문자에게는 공유되지 않습니다.
                   </p>
                 </div>
               )}
@@ -407,9 +389,9 @@ export const AdminModal: React.FC = () => {
                   <span>{isLoggingIn ? '확인 중…' : '관리자 대시보드 로그인'}</span>
                 </button>
 
-                {/* 서버 검증 안내: 비밀번호는 서버에서만 확인됩니다 */}
+                {/* 인증 방식 안내: 평문 비밀번호는 어디에도 저장하지 않습니다 */}
                 <p className="text-[10px] text-zinc-600 leading-relaxed">
-                  비밀번호는 서버에서 암호화되어 검증되며, 브라우저에는 저장되지 않습니다.
+                  비밀번호 평문은 저장되지 않으며, 해시로만 검증합니다. 로그인 상태는 이 탭을 닫으면 해제됩니다.
                 </p>
               </form>
             </div>
@@ -465,18 +447,6 @@ export const AdminModal: React.FC = () => {
                   >
                     <Briefcase className="w-4 h-4" />
                     <span>포트폴리오 관리 ({projects.length})</span>
-                  </button>
-
-                  <button
-                    onClick={() => setActiveTab('inquiries')}
-                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer ${
-                      activeTab === 'inquiries'
-                        ? 'bg-blue-600 text-white'
-                        : 'text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-800'
-                    }`}
-                  >
-                    <Inbox className="w-4 h-4" />
-                    <span>제작 문의 ({inquiries.length})</span>
                   </button>
 
                   <button
@@ -543,147 +513,6 @@ export const AdminModal: React.FC = () => {
                   </div>
                 )}
               </div>
-
-              {/* Tab 1: Inquiries Management */}
-              {activeTab === 'inquiries' && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between text-xs text-zinc-400">
-                    <span>방문자가 웹사이트 견적 폼을 통해 제출한 실시간 문의 목록입니다.</span>
-                    <span className="font-mono text-zinc-500">총 {inquiries.length}건</span>
-                  </div>
-
-                  {inquiries.length === 0 ? (
-                    <div className="p-12 text-center text-zinc-500 text-xs rounded-2xl bg-zinc-950 border border-zinc-900">
-                      접수된 문의 내역이 없습니다.
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {inquiries.map((inq) => (
-                        <div
-                          key={inq.id}
-                          className="p-5 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-4"
-                        >
-                          {/* Top Row: Client Info, Date, Status */}
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-900 pb-3">
-                            <div className="space-y-0.5">
-                              <div className="flex items-center gap-2">
-                                <strong className="text-white text-sm">{inq.clientName}</strong>
-                                {inq.company && (
-                                  <span className="text-xs text-zinc-400">({inq.company})</span>
-                                )}
-                              </div>
-                              <div className="text-[11px] text-zinc-500 font-mono">접수 일시: {inq.createdAt}</div>
-                            </div>
-
-                            {/* Status Selector */}
-                            <div className="flex items-center gap-2">
-                              <select
-                                value={inq.status}
-                                onChange={(e) => updateInquiryStatus(inq.id, e.target.value as InquiryStatus)}
-                                className={`text-xs font-semibold px-2.5 py-1 rounded-lg border focus:outline-none cursor-pointer ${
-                                  statusColors[inq.status]
-                                }`}
-                              >
-                                <option value="신규">신규</option>
-                                <option value="검토중">검토중</option>
-                                <option value="상담완료">상담완료</option>
-                                <option value="계약체결">계약체결</option>
-                              </select>
-
-                              <button
-                                onClick={() => {
-                                  if (confirm('이 문의 내역을 삭제하시겠습니까?')) {
-                                    deleteInquiry(inq.id);
-                                  }
-                                }}
-                                className="p-1.5 text-zinc-500 hover:text-red-400 transition-colors cursor-pointer"
-                                title="문의 삭제"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Contact Details & Requested Categories */}
-                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs bg-zinc-900/50 p-3.5 rounded-xl border border-zinc-850">
-                            <div>
-                              <div className="text-[11px] text-zinc-500">연락처</div>
-                              <div className="font-mono text-zinc-200 flex items-center gap-1.5 pt-0.5">
-                                <span>{inq.contact}</span>
-                                <button
-                                  onClick={() => handleCopyContact(inq.id, inq.contact)}
-                                  className="text-zinc-400 hover:text-white"
-                                  title="연락처 복사"
-                                >
-                                  {copiedId === inq.id ? (
-                                    <Check className="w-3 h-3 text-blue-400" />
-                                  ) : (
-                                    <Copy className="w-3 h-3" />
-                                  )}
-                                </button>
-                              </div>
-                            </div>
-
-                            <div>
-                              <div className="text-[11px] text-zinc-500">이메일</div>
-                              <div className="text-zinc-200 truncate pt-0.5">{inq.email}</div>
-                            </div>
-
-                            <div>
-                              <div className="text-[11px] text-zinc-500">의뢰 분야</div>
-                              <div className="text-blue-400 font-medium pt-0.5">
-                                {inq.categories.join(', ')}
-                              </div>
-                            </div>
-
-                            <div>
-                              <div className="text-[11px] text-zinc-500">예산 / 희망 일정</div>
-                              <div className="text-zinc-300 pt-0.5">
-                                {inq.budget} · {inq.schedule}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Project Description Brief */}
-                          <div className="space-y-1 text-xs">
-                            <span className="font-semibold text-zinc-400">의뢰 상세 내용:</span>
-                            <p className="text-zinc-300 bg-zinc-900/30 p-3 rounded-lg border border-zinc-850 leading-relaxed whitespace-pre-line">
-                              {inq.description}
-                            </p>
-                          </div>
-
-                          {inq.referenceUrl && (
-                            <div className="text-xs flex items-center gap-1.5 text-zinc-400">
-                              <span className="font-semibold">참고 링크:</span>
-                              <a
-                                href={inq.referenceUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-blue-400 hover:underline flex items-center gap-1 truncate max-w-md"
-                              >
-                                <span>{inq.referenceUrl}</span>
-                                <ExternalLink className="w-3 h-3" />
-                              </a>
-                            </div>
-                          )}
-
-                          {/* Admin Note Input */}
-                          <div className="pt-2 border-t border-zinc-900 flex items-center gap-2">
-                            <span className="text-[11px] text-zinc-500 shrink-0">관리자 메모:</span>
-                            <input
-                              type="text"
-                              defaultValue={inq.adminNote || ''}
-                              onBlur={(e) => updateInquiryStatus(inq.id, inq.status, e.target.value)}
-                              placeholder="상담 진행 상황, 견적 전달 일자 등 내부 메모 (입력 후 포커스 아웃 시 자동 저장)"
-                              className="w-full px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-blue-500"
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
 
               {/* Tab 2: Projects Management — 카테고리별 관리 */}
               {activeTab === 'projects' && (
