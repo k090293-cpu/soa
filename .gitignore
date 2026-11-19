@@ -9,3 +9,6 @@ coverage/
 
 # 서버 데이터 (콘텐츠/문의/관리자 해시/세션 키) — 절대 커밋하지 않습니다
 data/
+
+# 로컬 API 테스트 저장소 (Netlify Blobs 대체)
+.soa-store/

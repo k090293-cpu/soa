@@ -392,6 +392,20 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // 서버에 마지막으로 저장(또는 로드)한 스냅샷. 불필요한 재저장을 막는 비교 기준입니다.
   const lastSyncedRef = useRef<string>('');
+  /**
+   * 가장 최근 렌더의 스냅샷.
+   *
+   * [왜 필요한가]
+   *  저장 요청은 800ms 디바운스 뒤에 나갑니다. 그 사이에 사용자가 계속 편집할 수 있습니다.
+   *  응답이 돌아왔을 때 "지금 화면이 아직 저장을 시작한 그 상태인지" 확인해야,
+   *  서버가 돌려준(이미지가 URL 로 바뀐) 사본이 방금 친 글자를 덮어쓰지 않습니다.
+   */
+  const latestSnapshotRef = useRef<string>(snapshotKey(projects, menuContent, config));
+
+  // 모든 렌더에서 최신 스냅샷을 기록합니다. (응답 도착 시 "그 사이 편집 여부" 판단용)
+  useEffect(() => {
+    latestSnapshotRef.current = snapshotKey(projects, menuContent, config);
+  }, [projects, menuContent, config]);
 
   /**
    * ── 서버 부트스트랩 ─────────────────────────────────────────────────────
@@ -588,7 +602,7 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   //  · 조건: 서버가 살아 있고 + 관리자로 로그인되어 있을 때만 저장합니다.
   //    (방문자 브라우저가 서버 콘텐츠를 실수로 덮어쓰는 사고를 원천 차단)
   //  · 스냅샷 비교: 직전에 저장/로드한 값과 같으면 요청하지 않습니다.
-  //    (테마 토글·되돌리기 등 잦은 변경이 매번 디스크 쓰기로 이어지지 않게 함)
+  //    (테마 토글·되돌리기 등 잦은 변경이 매번 서버 쓰기로 이어지지 않게 함)
   useEffect(() => {
     if (!isHydrated || !isAdminLoggedIn || !isServerOnline) return;
 
@@ -600,15 +614,48 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const timer = setTimeout(() => {
       void (async () => {
         setIsSavingToServer(true);
+        const savedKey = key;
         const result = await api.saveContent({ projects, menuContent, config });
         if (cancelled) return;
 
         setIsSavingToServer(false);
 
         if (result.ok) {
-          lastSyncedRef.current = key;
-          setLastServerSaveAt(new Date().toISOString());
+          setLastServerSaveAt(result.updatedAt || new Date().toISOString());
           setStorageWarning((prev) => (prev?.key === 'server' ? null : prev));
+
+          /*
+           * 서버는 base64 이미지를 /api/media/<hash>.<ext> 로 바꿔 저장하고,
+           * 그 "정리된" 형태를 응답으로 돌려줍니다.
+           *
+           * 이걸 화면 상태에도 반영하는 이유:
+           *   1) 같은 이미지를 저장할 때마다 다시 업로드하지 않습니다(트래픽 절감).
+           *   2) 방문자가 받는 것과 관리자 화면이 정확히 같은 주소를 쓰게 됩니다.
+           *
+           * 단, 응답을 기다리는 동안 사용자가 계속 편집했다면 덮어쓰면 안 됩니다.
+           * 그래서 "지금 화면이 저장을 시작한 그 상태 그대로일 때"만 반영합니다.
+           */
+          const saved = result.saved;
+          const stillSame = latestSnapshotRef.current === savedKey;
+          if (saved && stillSame) {
+            const nextProjects = saved.projects ?? projects;
+            const nextMenu = saved.menuContent ?? menuContent;
+            const nextConfig = saved.config ?? config;
+            setProjects(nextProjects);
+            setMenuContent(nextMenu);
+            setConfig(nextConfig);
+            // 반영 직후의 스냅샷을 "동기화됨"으로 표시해 재저장 루프를 막습니다.
+            lastSyncedRef.current = snapshotKey(nextProjects, nextMenu, nextConfig);
+            latestSnapshotRef.current = lastSyncedRef.current;
+          } else {
+            // 반영하지 않았더라도 이 값은 서버에 저장되었으므로 기준을 갱신합니다.
+            lastSyncedRef.current = savedKey;
+          }
+
+          // 일부 이미지 업로드 실패 등은 성공 저장이어도 알려야 합니다.
+          if (result.message) {
+            setStorageWarning({ key: 'server', message: result.message });
+          }
           return;
         }
 
@@ -616,6 +663,11 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (result.unauthorized) {
           setIsAdminLoggedIn(false);
           setIsHomeInlineEditMode(false);
+        }
+
+        // 서버에 닿지 않으면 이후 요청을 멈추고(콘솔 도배 방지) 정적 모드로 표시합니다.
+        if (result.offline) {
+          setIsServerOnline(false);
         }
 
         setStorageWarning({

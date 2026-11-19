@@ -344,15 +344,15 @@ export const AdminModal: React.FC = () => {
                 </p>
               </div>
 
-              {/* 정적 배포 안내: 로그인은 되지만 편집 내용은 이 브라우저에만 저장됩니다.
-                  (예전 문구는 "관리자 기능을 사용할 수 없다" 였는데, 이제 로컬 인증으로 동작합니다) */}
+              {/* 서버 연결 실패 안내.
+                  정상 배포(Netlify Functions)에서는 표시되지 않습니다.
+                  함수 배포 전이거나 네트워크 장애일 때만 나타납니다. */}
               {!isServerOnline && (
-                <div className="p-3.5 rounded-xl bg-blue-950/40 border border-blue-900/60 text-left text-[11px] text-blue-200 leading-relaxed">
-                  <p className="font-bold mb-1">정적 배포 모드로 동작 중입니다</p>
+                <div className="p-3.5 rounded-xl bg-amber-950/40 border border-amber-900/60 text-left text-[11px] text-amber-200 leading-relaxed">
+                  <p className="font-bold mb-1">서버에 연결되지 않았습니다</p>
                   <p>
-                    이 사이트는 Netlify 정적 호스팅이라 별도 서버가 없습니다. 관리자 로그인과 편집은 정상
-                    동작하지만, 변경 내용은 <strong className="text-blue-100">이 브라우저에만</strong> 저장되며
-                    다른 기기·방문자에게는 공유되지 않습니다.
+                    지금은 임시로 <strong className="text-amber-100">이 브라우저에만</strong> 저장됩니다.
+                    네트워크 상태를 확인한 뒤 새로고침하면, 이후 수정 내용은 모든 방문자에게 반영됩니다.
                   </p>
                 </div>
               )}
@@ -391,7 +391,7 @@ export const AdminModal: React.FC = () => {
 
                 {/* 인증 방식 안내: 평문 비밀번호는 어디에도 저장하지 않습니다 */}
                 <p className="text-[10px] text-zinc-600 leading-relaxed">
-                  비밀번호 평문은 저장되지 않으며, 해시로만 검증합니다. 로그인 상태는 이 탭을 닫으면 해제됩니다.
+                  비밀번호 평문은 저장되지 않으며, 서버에서 해시로만 검증합니다. 로그인 상태는 12시간 동안 유지됩니다.
                 </p>
               </form>
             </div>
