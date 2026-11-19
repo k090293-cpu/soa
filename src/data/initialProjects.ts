@@ -117,8 +117,12 @@ export const INITIAL_PROJECTS: Project[] = [
       {
         id: 'g-urban-video',
         type: 'video',
+        // 영상은 이제 "링크"로 등록합니다.
+        // 관리자 화면에서 YouTube/Vimeo 링크를 붙여넣으면 됩니다. (샘플은 직접 링크)
         url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
         name: '캠페인 메인 모션 비디오 (영상 미리보기)',
+        // 재생 전에 보여줄 썸네일 — 클릭하면 재생됩니다.
+        thumbnail: '/images/portfolio_video_motion_1794358691788.jpg',
       },
     ],
     videoPreviewUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',

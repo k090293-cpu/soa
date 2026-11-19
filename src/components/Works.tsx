@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useStudio } from '../context/StudioContext';
 import { Project } from '../types';
-import { ArrowUpRight, TrendingUp, Sparkles } from 'lucide-react';
+import { ArrowUpRight, TrendingUp, Sparkles, Play } from 'lucide-react';
 import { EditableText } from './editable/EditableText';
 import { SiteText } from './editable/SiteText';
 
@@ -104,6 +104,12 @@ export const Works: React.FC = () => {
                   </span>
 
                   <div className="flex items-center gap-1.5">
+                    {project.gallery?.some((m) => m.type === 'video') && (
+                      <span className="text-[10px] font-mono text-blue-300 bg-black/75 backdrop-blur-md px-2 py-1 rounded-md border border-blue-800/70 flex items-center gap-1">
+                        <Play className="w-3 h-3 fill-current" />
+                        <span>VIDEO</span>
+                      </span>
+                    )}
                     {project.gallery && project.gallery.length > 1 && (
                       <span className="text-[10px] font-mono text-zinc-300 bg-black/70 backdrop-blur-md px-2 py-1 rounded-md border border-zinc-800 flex items-center gap-1">
                         <SiteText

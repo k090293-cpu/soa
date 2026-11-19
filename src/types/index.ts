@@ -23,10 +23,20 @@ export interface ImpactMetric {
 export interface MediaItem {
   id: string;
   type: 'image' | 'video';
+  /**
+   * 이미지: 이미지 주소(업로드 data URL 포함)
+   * 영상: YouTube/Vimeo 원본 링크 또는 영상 파일 주소
+   */
   url: string;
   name: string;
   size?: number;
   isCover?: boolean;
+  /**
+   * 영상 재생 전에 보여줄 썸네일.
+   * YouTube 는 영상 ID 로 자동 생성되지만, 관리자가 직접 지정할 수도 있습니다.
+   * (Vimeo 는 자동 조회가 실패할 수 있어 이 값이 있으면 우선 사용합니다)
+   */
+  thumbnail?: string;
 }
 
 export interface Project {
