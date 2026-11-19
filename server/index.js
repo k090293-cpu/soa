@@ -67,30 +67,67 @@ const mediaStore = new MediaStore(MEDIA_DIR);
 
 const sessionSecret = await loadSessionSecret(DATA_DIR);
 
-/** 환경변수 비밀번호가 있으면 해시로 만들어 저장합니다. (최초 1회 부트스트랩) */
+/**
+ * 관리자 비밀번호를 준비합니다.
+ *
+ * [동작 규칙 — "환경변수가 있으면 환경변수가 정답"]
+ *  1) ADMIN_PASSWORD 가 설정되어 있으면, 저장된 해시와 일치하지 않을 때 해시를 갱신합니다.
+ *     → 예전에는 "해시가 이미 있으면 무조건 return" 이라서, 배포 후 ADMIN_PASSWORD 를
+ *       바꿔도 반영되지 않고 예전 비밀번호가 계속 통하는 문제가 있었습니다.
+ *     → 일치하면 디스크에 쓰지 않으므로 재시작마다 불필요한 쓰기가 발생하지 않습니다.
+ *  2) ADMIN_PASSWORD 가 비어 있고 저장된 해시가 있으면 그것을 그대로 사용합니다.
+ *     (`npm run set-password` 로 관리하는 방식 — 이 경우 환경변수를 비워 두세요)
+ *  3) 둘 다 없으면 최초 1회 기본값(1012)으로 만들고 강하게 경고합니다.
+ */
 async function ensureAdminPassword() {
   const envPassword = (process.env.ADMIN_PASSWORD || '').trim();
   const creds = await credentialsStore.read();
+  const hasStored = isPasswordHash(creds.passwordHash);
 
-  if (isPasswordHash(creds.passwordHash)) return;
+  // 1) 환경변수가 있으면 항상 그 값을 정답으로 삼습니다.
+  if (envPassword) {
+    if (hasStored && (await verifyPassword(envPassword, creds.passwordHash))) {
+      return; // 이미 일치 → 쓰기 없음
+    }
+    await credentialsStore.write({
+      passwordHash: await hashPassword(envPassword),
+      updatedAt: new Date().toISOString(),
+    });
+    console.log(
+      hasStored
+        ? '[auth] ADMIN_PASSWORD 환경변수 값으로 관리자 비밀번호를 갱신했습니다.'
+        : '[auth] ADMIN_PASSWORD 로 최초 관리자 비밀번호를 설정했습니다.'
+    );
+    return;
+  }
 
-  // 해시가 아직 없을 때만 부트스트랩합니다.
-  const initial = envPassword || '1012';
+  // 2) 환경변수가 없고 저장된 해시가 있으면 그대로 사용합니다.
+  if (hasStored) {
+    // 저장된 값이 아직 기본값(1012)이면 운영 사고로 이어지므로 경고합니다.
+    if (await verifyPassword('1012', creds.passwordHash)) {
+      console.warn(
+        '\n' +
+          '⚠️  관리자 비밀번호가 아직 기본값(1012)입니다.\n' +
+          '    다음 중 하나로 반드시 변경하세요:\n' +
+          '      1) 배포 환경변수에 ADMIN_PASSWORD=새비밀번호 설정 후 재시작\n' +
+          '      2) npm run set-password -- 새비밀번호\n'
+      );
+    }
+    return;
+  }
+
+  // 3) 아무 설정도 없는 최초 기동 → 기본값으로 생성하고 경고합니다.
   await credentialsStore.write({
-    passwordHash: await hashPassword(initial),
+    passwordHash: await hashPassword('1012'),
     updatedAt: new Date().toISOString(),
   });
-
-  if (!envPassword) {
-    console.warn(
-      '\n' +
-        '⚠️  관리자 비밀번호가 기본값(1012)으로 설정되었습니다.\n' +
-        '    실제 운영 전에 반드시 다음 중 하나를 수행하세요:\n' +
-        '      1) .env 에 ADMIN_PASSWORD=새비밀번호 를 설정\n' +
-        '      2) npm run set-password -- 새비밀번호\n' +
-        '    (설정 후 data/admin.json 의 해시가 갱신됩니다)\n'
-    );
-  }
+  console.warn(
+    '\n' +
+      '⚠️  관리자 비밀번호가 기본값(1012)으로 설정되었습니다.\n' +
+      '    실제 운영 전에 반드시 다음 중 하나를 수행하세요:\n' +
+      '      1) 배포 환경변수에 ADMIN_PASSWORD=새비밀번호 설정 후 재시작\n' +
+      '      2) npm run set-password -- 새비밀번호\n'
+  );
 }
 
 await ensureAdminPassword();
