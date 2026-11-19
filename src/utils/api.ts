@@ -144,7 +144,9 @@ export const api = {
   },
 
   /** 문의 접수 (공개). 실패 사유를 사용자에게 그대로 보여줍니다. */
-  async createInquiry(payload: Record<string, unknown>): Promise<{ ok: boolean; message?: string }> {
+  async createInquiry(
+    payload: Record<string, unknown>
+  ): Promise<{ ok: boolean; message?: string; offline?: boolean }> {
     try {
       const res = await fetch('/api/inquiries', {
         method: 'POST',
@@ -152,6 +154,22 @@ export const api = {
         headers: JSON_HEADERS,
         body: JSON.stringify(payload),
       });
+
+      /*
+       * [중요] 정적 호스팅(Netlify/Vercel/Pages)에서는 POST /api/inquiries 가
+       *   (1) 404 를 돌려주거나,
+       *   (2) SPA rewrite 설정에 따라 200 + index.html 을 돌려줍니다.
+       * (2) 의 경우 res.ok 가 true 라서 "성공"으로 오판하고 문의가 조용히 유실됩니다.
+       * 그래서 본문이 JSON 인지 반드시 확인합니다.
+       */
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        return {
+          ok: false,
+          offline: true,
+          message: '현재 서버에 연결할 수 없습니다. 아래 채널로 직접 연락해 주세요.',
+        };
+      }
 
       const data = await res.json().catch(() => null);
 
@@ -163,7 +181,12 @@ export const api = {
       }
       return { ok: true };
     } catch {
-      return { ok: false, message: '서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.' };
+      // 네트워크 자체가 실패한 경우 (오프라인 / 서버 다운)
+      return {
+        ok: false,
+        offline: true,
+        message: '현재 서버에 연결할 수 없습니다. 아래 채널로 직접 연락해 주세요.',
+      };
     }
   },
 

@@ -210,34 +210,12 @@ export const INITIAL_PROJECTS: Project[] = [
   },
 ];
 
-export const INITIAL_INQUIRIES: ProjectInquiry[] = [
-  {
-    id: 'inq-1718001',
-    createdAt: '2026-11-09 14:32',
-    clientName: '김민준 팀장',
-    company: '루미너스 랩스 (뷰티 브랜드)',
-    contact: '010-3456-7890',
-    email: 'minjun.kim@luminouslabs.co.kr',
-    categories: ['상세페이지', '프로모션 배너'],
-    budget: '300만원 ~ 500만원',
-    schedule: '2주 이내 착수 희망 (12월 런칭)',
-    description: '신규 비건 앰플 론칭을 앞두고 있습니다. AURÉLIA 프로젝트처럼 고급스러운 에디토리얼 무드의 상세페이지와 와디즈 펀딩용 스토리 페이지 기획/제작을 의뢰드리고 싶습니다. 원본 제품 사진은 보유 중입니다.',
-    referenceUrl: 'https://aurelia-reference.example.com',
-    status: '신규',
-    adminNote: '전화 상담 완료 후 견적서 및 상세 일정 메일 발송 예정.',
-  },
-  {
-    id: 'inq-1717892',
-    createdAt: '2026-11-08 10:15',
-    clientName: '이지수 디렉터',
-    company: '넥스트모빌리티',
-    contact: '010-9876-5432',
-    email: 'jslee@nextmobility.io',
-    categories: ['숏폼 영상', '웹 배너'],
-    budget: '500만원 ~ 800만원',
-    schedule: '협의 가능 (1개월 소요 예상)',
-    description: '친환경 전기 바이크 서비스 런칭용 릴스 숏폼 3편 및 인스타그램 스폰서드 광고 소재 제작을 희망합니다. 모션 그래픽이 가미된 감각적인 영상 스타일을 찾고 있습니다.',
-    status: '검토중',
-    adminNote: '영상 레퍼런스 공유 완료. 11일 줌 미팅 일정 조율.',
-  },
-];
+/**
+ * 문의 초기값.
+ *
+ * [왜 비어 있는가]
+ *  예전에는 '김민준 팀장' 같은 가짜 데모 문의가 들어 있어, 관리자 패널을 열면
+ *  실제로 접수된 문의처럼 보였습니다. 실제 서비스에서 가장 위험한 착각이므로
+ *  가짜 데이터는 넣지 않습니다. 문의는 오직 서버(또는 실제 제출)로만 채워집니다.
+ */
+export const INITIAL_INQUIRIES: ProjectInquiry[] = [];

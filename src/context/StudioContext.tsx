@@ -146,7 +146,7 @@ interface StudioContextType {
   backupInfo: { savedAt: string; count: number } | null;
   addInquiry: (
     inquiryData: Omit<ProjectInquiry, 'id' | 'createdAt' | 'status'>
-  ) => Promise<{ ok: boolean; message?: string }>;
+  ) => Promise<{ ok: boolean; message?: string; offline?: boolean }>;
   /** 관리자: 서버에서 최신 문의 목록을 다시 불러옵니다. */
   refreshInquiries: () => Promise<void>;
   updateInquiryStatus: (id: string, status: InquiryStatus, adminNote?: string) => void;
@@ -189,7 +189,6 @@ const STORAGE_KEYS = {
   INQUIRIES: 'soa_studio_inquiries_v2',
   CONFIG: 'soa_studio_config_v2',
   MENU_CONTENT: 'soa_menu_content_v2',
-  ADMIN_SESSION: 'soa_studio_admin_session_v2',
 };
 
 /** 현재 시각을 'YYYY-MM-DD HH:mm' 형식으로 반환 */
@@ -274,7 +273,18 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [inquiries, setInquiries] = useState<ProjectInquiry[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.INQUIRIES);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          /*
+           * 예전 버전이 넣어 둔 가짜 데모 문의('김민준 팀장' 등)가 브라우저에 남아 있으면
+           * 실제 접수된 문의처럼 보입니다. 알려진 데모 id 는 걸러냅니다.
+           * (서버에서 내려온 실제 문의는 id 가 inq-<timestamp>-<hex> 형식입니다)
+           */
+          const DEMO_IDS = new Set(['inq-1718001', 'inq-1717892']);
+          return (parsed as ProjectInquiry[]).filter((item) => item && !DEMO_IDS.has(item.id));
+        }
+      }
     } catch (e) {
       console.error('Failed to load inquiries from storage', e);
     }
@@ -770,12 +780,9 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // 이제는 서버에 저장하고, 화면에는 "이번 세션의 사본"만 유지합니다.
   const addInquiry = async (
     inquiryData: Omit<ProjectInquiry, 'id' | 'createdAt' | 'status'>
-  ): Promise<{ ok: boolean; message?: string }> => {
+  ): Promise<{ ok: boolean; message?: string; offline?: boolean }> => {
     const result = await api.createInquiry(inquiryData as unknown as Record<string, unknown>);
 
-    if (!result.ok) return result;
-
-    // 서버 저장에 성공한 경우에만 화면 목록에도 반영합니다.
     const now = new Date();
     const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     const newInq: ProjectInquiry = {
@@ -784,6 +791,24 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       createdAt: formattedDate,
       status: '신규',
     };
+
+    if (!result.ok) {
+      /*
+       * 서버가 없는 정적 배포(Netlify 등)에서는 문의를 접수할 수 없습니다.
+       * 이때도 작성한 내용을 로컬에 남겨 두어, 같은 브라우저의 관리자 화면에서
+       * 최소한 확인할 수 있게 합니다. (방문자에게는 실패를 정직하게 알립니다)
+       */
+      if (result.offline) {
+        setInquiries((prev) => {
+          // 같은 내용이 중복 저장되지 않도록 방어
+          if (prev.some((item) => item.id === newInq.id)) return prev;
+          return [newInq, ...prev];
+        });
+      }
+      return result;
+    }
+
+    // 서버 저장에 성공한 경우에만 화면 목록에도 반영합니다.
     setInquiries((prev) => [newInq, ...prev]);
 
     // 방문자는 문의 목록을 볼 수 없으므로, 관리자 화면은 다음 새로고침 때 서버에서 다시 읽습니다.
