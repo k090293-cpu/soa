@@ -188,14 +188,62 @@ npm run set-password -- 새비밀번호   # data/admin.json 의 해시 갱신
 
 ## 배포
 
-정적 사이트이므로 `npm run build` 결과물(`dist/`)을 어떤 정적 호스팅에도 배포할 수 있습니다.
+두 가지 방식이 있습니다. **관리자 로그인·콘텐츠 저장·문의 수신이 필요하면 A(서버) 로 배포해야 합니다.**
+
+### A. Node 서버 배포 (권장 — 전체 기능 동작)
 
 ```bash
+npm ci
 npm run build
+npm start          # PORT(기본 3000) 로 dist/ + API 를 함께 서빙
 ```
 
-- **Vercel / Netlify / Cloudflare Pages** — 빌드 명령 `npm run build`, 출력 디렉터리 `dist`
-- 해시 라우팅을 사용하므로 **SPA 리라이트(rewrite) 규칙이 필요하지 않습니다.**
+필수 환경 변수:
+
+| 변수 | 설명 |
+|---|---|
+| `ADMIN_PASSWORD` | 관리자 비밀번호. **운영 시 반드시 변경** (미설정 시 기본값 `1012`) |
+| `SESSION_SECRET` | 세션 서명 키 32자 이상. 미설정 시 `data/session.key` 에 생성되며, **재시작 시 세션이 유지되려면 고정해야 함** |
+| `DATA_DIR` | 데이터 저장 경로 (기본 `./data`) |
+| `NODE_ENV` | `production` 이면 세션 쿠키에 `Secure` 플래그가 붙음 |
+
+> ⚠️ **가장 흔한 실수: 영속 디스크(볼륨) 미설정.**
+> 저장소가 `data/` 를 컨테이너 임시 파일시스템에 두면 **재배포할 때마다 관리자가 편집한 콘텐츠와
+> 접수된 문의가 전부 사라집니다.** 반드시 볼륨을 `DATA_DIR` 에 마운트하세요.
+
+**Render (Blueprint)** — 저장소를 연결하면 `render.yaml` 이 자동 구성합니다.
+`disk` 항목이 `/var/data` 를 `DATA_DIR` 로 마운트하므로 재배포 후에도 데이터가 유지됩니다.
+
+```bash
+# 최초 1회 비밀번호 설정 (배포 후 셸에서)
+npm run set-password -- 새비밀번호
+```
+
+**Docker**
+
+```bash
+docker build -t soa-portfolio .
+docker run -d -p 3000:3000 \
+  -e ADMIN_PASSWORD='새비밀번호' \
+  -e SESSION_SECRET='32자 이상의 임의 문자열' \
+  -v soa-data:/app/data \
+  soa-portfolio
+```
+
+**Railway / Fly.io / VPS** 도 동일합니다. 시작 명령 `node server/index.js`,
+빌드 명령 `npm ci && npm run build`, 그리고 `DATA_DIR` 에 볼륨을 연결하면 됩니다.
+
+### B. 정적 배포 (기능 제한)
+
+```bash
+npm run build      # → dist/
+```
+
+- **Netlify / Vercel / Cloudflare Pages** — 빌드 명령 `npm run build`, 출력 디렉터리 `dist`
+- 해시 라우팅을 사용하므로 **SPA 리라이트 규칙이 필요하지 않습니다.**
+- ⚠️ Express 가 실행되지 않으므로 **관리자 로그인·저장·문의가 동작하지 않습니다.**
+  API 호출이 실패하면 사이트는 자동으로 기존 브라우저 저장 방식으로 폴백합니다.
+  (방문자에게는 정상적으로 보이지만, 편집 내용은 편집자 브라우저에만 남습니다)
 
 ---
 
