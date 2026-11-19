@@ -62,7 +62,13 @@ process.on('SIGTERM', shutdown);
 
 console.log(`\n  개발 모드 시작 — API:${API_PORT} / WEB:3000\n`);
 
-start('api', process.execPath, ['server/index.js'], { PORT: API_PORT });
+/*
+ * API 는 Netlify Function 핸들러(scripts/local-api-server.mjs)를 그대로 띄웁니다.
+ * 예전에는 Express 서버(server/index.js)를 썼지만, 실제 배포가 Netlify Functions 이므로
+ * 개발 환경도 배포와 같은 코드를 쓰는 편이 안전합니다.
+ * (Vite 가 /api 요청을 이 포트로 프록시합니다)
+ */
+start('api', process.execPath, ['scripts/local-api-server.mjs'], { PORT: API_PORT });
 start('web', process.execPath, [path.join(ROOT, 'node_modules/vite/bin/vite.js'), '--port=3000', '--host=0.0.0.0'], {
   // Vite 프록시가 붙을 API 주소
   VITE_API_PORT: API_PORT,
