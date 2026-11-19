@@ -1,0 +1,29 @@
+// Render.com 배포 설정 (Blueprint).
+// 저장소를 Render 에 연결하면 이 파일을 읽어 서비스를 자동 구성합니다.
+//
+// ⚠️ 중요: 아래 disk 가 없으면 재배포 시마다 data/ 가 초기화되어
+//    관리자가 편집한 콘텐츠와 접수된 문의가 모두 사라집니다.
+services:
+  - type: web
+    name: soa-portfolio
+    runtime: node
+    plan: starter
+    region: singapore
+    buildCommand: npm ci && npm run build
+    startCommand: node server/index.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # 배포 후 반드시 값을 바꾸세요. 비워 두면 기본값 1012 가 사용됩니다.
+      - key: ADMIN_PASSWORD
+        sync: false
+      # 32자 이상. 비워 두면 재시작마다 새로 생성되어 로그인이 풀립니다.
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: DATA_DIR
+        value: /var/data
+    disk:
+      name: soa-data
+      mountPath: /var/data
+      sizeGB: 1

@@ -56,6 +56,7 @@ export const Contact: React.FC = () => {
   const [submittedSuccess, setSubmittedSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [copiedEmail, setCopiedEmail] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // If a user clicked "이 프로젝트/서비스 문의하기", auto-select that category
   useEffect(() => {
@@ -82,9 +83,10 @@ export const Contact: React.FC = () => {
     setTimeout(() => setCopiedEmail(false), 2000);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
+    if (isSubmitting) return;
 
     if (!clientName.trim()) {
       setErrorMessage('성함 또는 담당자명을 입력해 주세요.');
@@ -107,28 +109,41 @@ export const Contact: React.FC = () => {
       return;
     }
 
-    // Save inquiry to context/localStorage
-    addInquiry({
-      clientName: clientName.trim(),
-      company: company.trim() || undefined,
-      contact: contact.trim(),
-      email: email.trim(),
-      categories,
-      budget,
-      schedule,
-      description: description.trim(),
-      referenceUrl: referenceUrl.trim() || undefined,
-    });
+    // 서버에 문의를 저장합니다. (예전에는 방문자 브라우저에만 남아 관리자가 볼 수 없었습니다)
+    setIsSubmitting(true);
+    try {
+      const result = await addInquiry({
+        clientName: clientName.trim(),
+        company: company.trim() || undefined,
+        contact: contact.trim(),
+        email: email.trim(),
+        categories,
+        budget,
+        schedule,
+        description: description.trim(),
+        referenceUrl: referenceUrl.trim() || undefined,
+      });
 
-    setSubmittedSuccess(true);
-    // Reset form
-    setClientName('');
-    setCompany('');
-    setContact('');
-    setEmail('');
-    setDescription('');
-    setReferenceUrl('');
-    setSelectedInquiryCategory(null);
+      if (!result.ok) {
+        setErrorMessage(
+          result.message ||
+            '문의 접수에 실패했습니다. 잠시 후 다시 시도하시거나 아래 채널로 직접 연락해 주세요.'
+        );
+        return;
+      }
+
+      setSubmittedSuccess(true);
+      // Reset form
+      setClientName('');
+      setCompany('');
+      setContact('');
+      setEmail('');
+      setDescription('');
+      setReferenceUrl('');
+      setSelectedInquiryCategory(null);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const availableCategories = [
@@ -202,20 +217,20 @@ export const Contact: React.FC = () => {
               <div className="space-y-4 pt-2">
                 {/* Email */}
                 <div className="p-4 rounded-xl bg-zinc-950/80 border border-zinc-850 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
                     <div className="w-9 h-9 rounded-lg bg-blue-950/60 border border-blue-900/40 flex items-center justify-center text-blue-400 shrink-0">
                       <Mail className="w-4 h-4" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <div className="text-[11px] text-zinc-500">
                         <SiteText tkey="contact.channel.email.label" fallback="공식 이메일" label="이메일 라벨" />
                       </div>
-                      <div className="text-xs font-semibold text-zinc-200">{config.email}</div>
+                      <div className="text-xs font-semibold text-zinc-200 break-all">{config.email}</div>
                     </div>
                   </div>
                   <button
                     onClick={handleCopyEmail}
-                    className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-xs transition-colors cursor-pointer flex items-center gap-1"
+                    className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-xs transition-colors cursor-pointer flex items-center gap-1 shrink-0"
                     title="이메일 복사"
                   >
                     {copiedEmail ? <Check className="w-3.5 h-3.5 text-blue-400" /> : <Copy className="w-3.5 h-3.5" />}
@@ -231,36 +246,36 @@ export const Contact: React.FC = () => {
 
                 {/* Phone */}
                 <div className="p-4 rounded-xl bg-zinc-950/80 border border-zinc-850 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
                     <div className="w-9 h-9 rounded-lg bg-blue-950/60 border border-blue-900/40 flex items-center justify-center text-blue-400 shrink-0">
                       <Phone className="w-4 h-4" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <div className="text-[11px] text-zinc-500">
                         <SiteText tkey="contact.channel.phone.label" fallback="유선 연락처" label="전화 라벨" />
                       </div>
-                      <div className="text-xs font-semibold text-zinc-200">{config.phone}</div>
+                      <div className="text-xs font-semibold text-zinc-200 break-all">{config.phone}</div>
                     </div>
                   </div>
-                  <span className="text-[11px] text-zinc-500 font-mono">
+                  <span className="text-[11px] text-zinc-500 font-mono shrink-0">
                     <SiteText tkey="contact.channel.phone.hours" fallback="평일 10:00 - 19:00" label="상담 시간" />
                   </span>
                 </div>
 
                 {/* Kakao */}
                 <div className="p-4 rounded-xl bg-zinc-950/80 border border-zinc-850 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
                     <div className="w-9 h-9 rounded-lg bg-yellow-950/40 border border-yellow-800/40 flex items-center justify-center text-yellow-400 shrink-0">
                       <MessageSquare className="w-4 h-4" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <div className="text-[11px] text-zinc-500">
                         <SiteText tkey="contact.channel.kakao.label" fallback="카카오톡 채널 상담" label="카카오 라벨" />
                       </div>
-                      <div className="text-xs font-semibold text-zinc-200">ID: {config.kakao}</div>
+                      <div className="text-xs font-semibold text-zinc-200 break-all">ID: {config.kakao}</div>
                     </div>
                   </div>
-                  <span className="text-[11px] text-yellow-400 font-medium">
+                  <span className="text-[11px] text-yellow-400 font-medium shrink-0">
                     <SiteText tkey="contact.channel.kakao.status" fallback="실시간 상담 가능" label="카카오 상태" />
                   </span>
                 </div>

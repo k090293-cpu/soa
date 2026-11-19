@@ -4,6 +4,12 @@ import path from 'path';
 import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
+  // 개발 모드에서 API 서버(기본 3001)로 /api, /media 요청을 넘깁니다.
+  // 덕분에 프론트엔드는 항상 같은 출처(same-origin)의 /api 를 호출하면 되고,
+  // 세션 쿠키(SameSite=Strict)도 그대로 동작합니다.
+  const apiPort = process.env.VITE_API_PORT || '3001';
+  const apiTarget = `http://127.0.0.1:${apiPort}`;
+
   return {
     plugins: [react(), tailwindcss()],
     resolve: {
@@ -26,6 +32,10 @@ export default defineConfig(() => {
         '.genspark.ai',
         '.trycloudflare.com',
       ],
+      proxy: {
+        '/api': { target: apiTarget, changeOrigin: false },
+        '/media': { target: apiTarget, changeOrigin: false },
+      },
     },
   };
 });
