@@ -60,18 +60,21 @@ export const Header: React.FC = () => {
             : 'bg-transparent border-b border-zinc-800/30'
         }`}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between gap-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between gap-2 sm:gap-4 lg:gap-8">
           {/* Zone 1: Brand Wordmark */}
           <button
             onClick={() => handleNavClick('home')}
-            className="text-left font-display font-extrabold text-base sm:text-lg md:text-xl tracking-tight text-white hover:text-blue-400 transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 cursor-pointer"
+            className="text-left font-display font-extrabold text-[15px] sm:text-base md:text-lg lg:text-xl tracking-tight text-white hover:text-blue-400 transition-colors whitespace-nowrap min-w-0 truncate flex items-center gap-1.5 cursor-pointer"
           >
-            <span>PORTFOLIO_SO.A</span>
-            <span className="text-blue-500 font-black">.</span>
+            <span className="truncate">PORTFOLIO_SO.A</span>
+            <span className="text-blue-500 font-black shrink-0">.</span>
           </button>
 
           {/* Zone 2: Navigation Links for Each Dedicated Page */}
-          <nav className="hidden md:flex items-center gap-8 text-xs font-semibold tracking-wider">
+          {/* 링크형 내비게이션은 lg 이상에서만 노출합니다.
+              md 구간(768~1023px)에서는 브랜드 + 액션 버튼과 함께 들어가지 않아
+              바깥으로 밀려나므로, 햄버거 메뉴로 통일합니다. */}
+          <nav className="hidden lg:flex items-center gap-6 lg:gap-8 text-xs font-semibold tracking-wider">
             {navItems.map((item) => {
               const isActive = currentPage === item.page;
               return (
@@ -94,13 +97,13 @@ export const Header: React.FC = () => {
           </nav>
 
           {/* Zone 3: Primary Action & Admin Lock */}
-          <div className="flex items-center gap-3 shrink-0">
-            {/* Theme toggle (다크 / 화이트) */}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            {/* Theme toggle (다크 / 화이트) — 좁은 화면에서는 햄버거 메뉴 안으로 이동 */}
             <button
               onClick={toggleTheme}
               title={theme === 'dark' ? '화이트 모드로 전환' : '다크 모드로 전환'}
               aria-label={theme === 'dark' ? '화이트 모드로 전환' : '다크 모드로 전환'}
-              className="p-2 rounded-lg border border-zinc-800 hover:border-zinc-700 bg-zinc-900/60 text-zinc-400 hover:text-zinc-200 text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="hidden sm:flex p-2 rounded-lg border border-zinc-800 hover:border-zinc-700 bg-zinc-900/60 text-zinc-400 hover:text-zinc-200 text-xs items-center gap-1.5 transition-colors cursor-pointer"
             >
               {theme === 'dark' ? (
                 <Sun className="w-3.5 h-3.5 text-amber-400" />
@@ -112,11 +115,11 @@ export const Header: React.FC = () => {
               </span>
             </button>
 
-            {/* Admin entry trigger */}
+            {/* Admin entry trigger — 좁은 화면에서는 햄버거 메뉴 안으로 이동 */}
             <button
               onClick={() => setIsAdminModalOpen(true)}
               title={isAdminLoggedIn ? '관리자 대시보드 열기' : '관리자 로그인'}
-              className={`p-2 rounded-lg border text-xs flex items-center gap-1.5 transition-colors cursor-pointer ${
+              className={`hidden sm:flex p-2 rounded-lg border text-xs items-center gap-1.5 transition-colors cursor-pointer ${
                 isAdminLoggedIn
                   ? 'border-blue-500/50 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20'
                   : 'border-zinc-800 hover:border-zinc-700 bg-zinc-900/60 text-zinc-400 hover:text-zinc-200'
@@ -129,17 +132,18 @@ export const Header: React.FC = () => {
             {/* Primary Action Button */}
             <button
               onClick={() => handleNavClick('contact')}
-              className="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 active:bg-blue-700 rounded-lg transition-all duration-150 flex items-center gap-1.5 shadow-md shadow-blue-600/20 whitespace-nowrap shrink-0 cursor-pointer"
+              className="px-3 sm:px-4 py-2 text-[11px] sm:text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 active:bg-blue-700 rounded-lg transition-all duration-150 flex items-center gap-1.5 shadow-md shadow-blue-600/20 whitespace-nowrap shrink-0 cursor-pointer"
             >
               <span>프로젝트 문의</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
             </button>
 
-            {/* Mobile Hamburger Toggle */}
+            {/* Mobile Hamburger Toggle (lg 미만에서는 항상 노출) */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 text-zinc-400 hover:text-white rounded-lg focus:outline-none"
+              className="lg:hidden p-2 -mr-1 text-zinc-400 hover:text-white rounded-lg focus:outline-none shrink-0"
               aria-label="Toggle menu"
+              aria-expanded={mobileMenuOpen}
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -148,7 +152,7 @@ export const Header: React.FC = () => {
 
         {/* Mobile Dropdown Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-b border-zinc-800 bg-[var(--app-surface-3)] px-6 py-5 space-y-3">
+          <div className="lg:hidden border-b border-zinc-800 bg-[var(--app-surface-3)] px-6 py-5 space-y-3">
             {navItems.map((item) => (
               <button
                 key={item.page}
@@ -160,16 +164,25 @@ export const Header: React.FC = () => {
                 {item.label}
               </button>
             ))}
-            <div className="pt-3 border-t border-zinc-800 flex items-center justify-between">
+            <div className="pt-3 border-t border-zinc-800 flex items-center justify-between gap-3">
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
                   setIsAdminModalOpen(true);
                 }}
-                className="text-xs text-zinc-400 hover:text-white flex items-center gap-1.5"
+                className="text-xs text-zinc-400 hover:text-white flex items-center gap-1.5 cursor-pointer"
               >
                 <Lock className="w-3.5 h-3.5" />
                 <span>관리자 로그인</span>
+              </button>
+              {/* 좁은 화면에서 헤더에서 빠진 테마 전환을 여기서 제공합니다. */}
+              <button
+                onClick={toggleTheme}
+                aria-label={theme === 'dark' ? '화이트 모드로 전환' : '다크 모드로 전환'}
+                className="sm:hidden text-xs text-zinc-400 hover:text-white flex items-center gap-1.5 cursor-pointer"
+              >
+                {theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-blue-400" />}
+                <span>{theme === 'dark' ? '화이트 모드' : '다크 모드'}</span>
               </button>
             </div>
           </div>
