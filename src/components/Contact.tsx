@@ -57,6 +57,11 @@ export const Contact: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [copiedEmail, setCopiedEmail] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  /**
+   * 서버가 없는 정적 배포에서 접수에 실패했을 때, 작성한 내용을 그대로 담은
+   * 메일 링크. 문의가 그냥 사라지지 않도록 메일 앱으로 넘겨줍니다.
+   */
+  const [mailtoHref, setMailtoHref] = useState('');
 
   // If a user clicked "이 프로젝트/서비스 문의하기", auto-select that category
   useEffect(() => {
@@ -86,6 +91,7 @@ export const Contact: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
+    setMailtoHref('');
     if (isSubmitting) return;
 
     if (!clientName.trim()) {
@@ -125,6 +131,40 @@ export const Contact: React.FC = () => {
       });
 
       if (!result.ok) {
+        /*
+         * 서버가 없는 정적 배포(Netlify 등)에서는 접수 API 가 존재하지 않습니다.
+         * 이때 "실패했습니다" 만 보여주면 방문자는 문의를 포기하게 됩니다.
+         * 작성한 내용을 그대로 메일로 넘길 수 있게 링크를 만들어 드립니다.
+         */
+        if (result.offline) {
+          const subject = `[홈페이지 문의] ${clientName.trim()}${
+            company.trim() ? ` / ${company.trim()}` : ''
+          }`;
+          const body = [
+            `성함/담당자명: ${clientName.trim()}`,
+            `회사/브랜드: ${company.trim() || '-'}`,
+            `연락처: ${contact.trim()}`,
+            `이메일: ${email.trim()}`,
+            `관심 분야: ${categories.length ? categories.join(', ') : '-'}`,
+            `예상 예산: ${budget}`,
+            `희망 일정: ${schedule}`,
+            referenceUrl.trim() ? `참고 링크: ${referenceUrl.trim()}` : '',
+            '',
+            '[프로젝트 내용]',
+            description.trim(),
+          ]
+            .filter((line) => line !== '')
+            .join('\n');
+
+          setMailtoHref(
+            `mailto:${config.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+          );
+          setErrorMessage(
+            '지금은 온라인 접수가 일시적으로 불가능합니다. 아래 버튼을 누르면 작성하신 내용이 그대로 담긴 메일이 열립니다.'
+          );
+          return;
+        }
+
         setErrorMessage(
           result.message ||
             '문의 접수에 실패했습니다. 잠시 후 다시 시도하시거나 아래 채널로 직접 연락해 주세요.'
@@ -333,9 +373,32 @@ export const Contact: React.FC = () => {
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Error Banner */}
                 {errorMessage && (
-                  <div className="p-3.5 rounded-xl bg-red-950/40 border border-red-800/60 flex items-center gap-2 text-xs text-red-300">
-                    <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
-                    <span>{errorMessage}</span>
+                  <div className="p-3.5 rounded-xl bg-red-950/40 border border-red-800/60 text-xs text-red-300 space-y-2.5">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                      <span>{errorMessage}</span>
+                    </div>
+                    {mailtoHref && (
+                      <div className="flex flex-wrap items-center gap-2 pl-6">
+                        <a
+                          href={mailtoHref}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold transition-colors"
+                        >
+                          <Mail className="w-3.5 h-3.5" />
+                          메일로 문의 보내기
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(description.trim());
+                          }}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[11px] font-semibold transition-colors cursor-pointer"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                          내용 복사
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
 

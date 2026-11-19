@@ -65,6 +65,7 @@ export const AdminModal: React.FC = () => {
     setIsSplitEditorOpen,
     storageWarning,
     dismissStorageWarning,
+    isServerOnline,
   } = useStudio();
 
   // Login form state
@@ -361,6 +362,18 @@ export const AdminModal: React.FC = () => {
                   포트폴리오 수정 및 접수된 견적 문의 조회를 위해 관리자 비밀번호를 입력하세요.
                 </p>
               </div>
+
+              {/* 서버가 없는 정적 배포에서는 로그인 자체가 불가능하므로 미리 알려 줍니다.
+                  (예전에는 "비밀번호가 일치하지 않습니다" 라는 잘못된 안내가 떴습니다) */}
+              {!isServerOnline && (
+                <div className="p-3.5 rounded-xl bg-amber-950/40 border border-amber-800/60 text-left text-[11px] text-amber-200 leading-relaxed">
+                  <p className="font-bold mb-1">관리자 기능을 사용할 수 없는 환경입니다</p>
+                  <p>
+                    현재 사이트는 정적 호스팅으로 배포되어 서버가 실행되지 않습니다. 관리자 로그인·저장·문의
+                    수신은 Node 서버로 배포했을 때만 동작합니다.
+                  </p>
+                </div>
+              )}
 
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-1 text-left">
