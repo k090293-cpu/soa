@@ -1,7 +1,9 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { Project, ProjectCategory, MediaItem } from '../../types';
 import { useStudio } from '../../context/StudioContext';
-import { processImageFile, processVideoFile } from '../../utils/mediaStorage';
+import { processImageFile } from '../../utils/mediaStorage';
+import { parseVideoUrl, VIDEO_PROVIDER_LABEL } from '../../utils/videoEmbed';
+import { VideoPlayer } from '../media/VideoPlayer';
 import {
   X,
   Upload,
@@ -9,7 +11,11 @@ import {
   Play,
   Plus,
   Loader2,
-  Copy
+  Copy,
+  Link2,
+  Film,
+  AlertCircle,
+  Check
 } from 'lucide-react';
 
 interface ProjectFormModalProps {
@@ -95,6 +101,20 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
   const [isCopyPanelOpen, setIsCopyPanelOpen] = useState(false);
   const [copySourceId, setCopySourceId] = useState<string>('');
 
+  /*
+   * 영상은 이제 파일 업로드가 아니라 링크로 등록합니다.
+   *  · 영상 파일은 용량이 커서 브라우저 저장소를 금방 채웁니다.
+   *  · 정적 배포에서는 업로드한 영상이 방문자에게 전달되지도 않습니다.
+   *  · YouTube/Vimeo 링크는 용량 부담이 0 이고 재생 품질도 보장됩니다.
+   */
+  const [videoUrlInput, setVideoUrlInput] = useState('');
+  const [videoNameInput, setVideoNameInput] = useState('');
+  const [videoThumbInput, setVideoThumbInput] = useState('');
+  const [videoError, setVideoError] = useState('');
+
+  /** 입력 중인 링크의 해석 결과 (미리보기용) */
+  const parsedVideoInput = useMemo(() => parseVideoUrl(videoUrlInput), [videoUrlInput]);
+
   // Preset images for fast testing
   const presetImages = [
     { label: '웹/상세페이지 (Cosmetics)', url: '/images/portfolio_web_cosmetics_1794358690539.jpg' },
@@ -103,7 +123,48 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
     { label: '스튜디오 데스크 (Minimal Desk)', url: '/images/hero_design_showcase_1794358690838.jpg' },
   ];
 
-  // Handle Local File Upload (Images & Videos)
+  /** 영상 썸네일 주소 — 관리자 지정값 → 자동 생성값 순서로 사용합니다. */
+  const videoThumbFor = (media: MediaItem): string | null => {
+    if (media.type !== 'video') return media.url;
+    if (media.thumbnail) return media.thumbnail;
+    return parseVideoUrl(media.url)?.thumbnail ?? null;
+  };
+
+  /** 영상 링크를 갤러리에 추가합니다. */
+  const handleAddVideoLink = () => {
+    const raw = videoUrlInput.trim();
+    const parsed = parseVideoUrl(raw);
+
+    if (!parsed) {
+      setVideoError(
+        'YouTube 또는 Vimeo 영상 링크를 정확히 입력해 주세요. (예: https://youtu.be/XXXXXXXXXXX)'
+      );
+      return;
+    }
+
+    // 같은 영상을 두 번 등록하지 않도록 방어합니다.
+    if (gallery.some((m) => m.type === 'video' && m.url.trim() === raw)) {
+      setVideoError('이미 추가된 영상 링크입니다.');
+      return;
+    }
+
+    const providerLabel = VIDEO_PROVIDER_LABEL[parsed.provider];
+    const newItem: MediaItem = {
+      id: `media-link-${Date.now()}`,
+      type: 'video',
+      url: raw,
+      name: videoNameInput.trim() || `${providerLabel} 영상`,
+      thumbnail: videoThumbInput.trim() || parsed.thumbnail || undefined,
+    };
+
+    setGallery((prev) => [...prev, newItem]);
+    setVideoUrlInput('');
+    setVideoNameInput('');
+    setVideoThumbInput('');
+    setVideoError('');
+  };
+
+  // 이미지 파일만 업로드합니다. (영상은 위의 링크 입력으로 등록)
   const handleFilesSelected = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     setIsProcessingFiles(true);
@@ -112,18 +173,13 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
+      // 영상 파일을 끌어다 놓은 경우: 저장소를 낭비하지 않도록 안내하고 건너뜁니다.
+      if (file.type.startsWith('video/')) {
+        setVideoError('영상은 파일 업로드 대신 아래 “영상 링크 추가”에 YouTube/Vimeo 링크를 넣어 주세요.');
+        continue;
+      }
       try {
-        if (file.type.startsWith('video/')) {
-          const videoDataUrl = await processVideoFile(file);
-          newMediaItems.push({
-            id: `media-vid-${Date.now()}-${i}`,
-            type: 'video',
-            url: videoDataUrl,
-            name: file.name,
-            size: file.size,
-            isCover: gallery.length === 0 && i === 0,
-          });
-        } else if (file.type.startsWith('image/')) {
+        if (file.type.startsWith('image/')) {
           const imageDataUrl = await processImageFile(file);
           newMediaItems.push({
             id: `media-img-${Date.now()}-${i}`,
@@ -162,25 +218,28 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
   };
 
   // Set selected media as cover
+  // 대표 커버(카드 썸네일)는 반드시 "이미지"여야 합니다.
+  // 영상 링크를 커버로 지정하면 카드에 그림이 표시되지 않으므로 막습니다.
   const handleSetCover = (id: string) => {
-    setGallery((prev) =>
-      prev.map((item) => {
-        if (item.id === id) {
-          setCoverImage(item.url);
-          return { ...item, isCover: true };
-        }
-        return { ...item, isCover: false };
-      })
-    );
+    setGallery((prev) => {
+      const target = prev.find((item) => item.id === id);
+      if (!target || target.type !== 'image') return prev;
+      setCoverImage(target.url);
+      return prev.map((item) => ({ ...item, isCover: item.id === id }));
+    });
   };
 
-  // Remove media from gallery
+    // Remove media from gallery
   const handleRemoveMedia = (id: string) => {
     setGallery((prev) => {
       const filtered = prev.filter((item) => item.id !== id);
+      // 대표 커버가 사라졌으면 이미지 중 첫 장을 새 커버로 지정합니다.
       if (filtered.length > 0 && !filtered.some((m) => m.isCover)) {
-        filtered[0].isCover = true;
-        setCoverImage(filtered[0].url);
+        const firstImage = filtered.find((m) => m.type === 'image');
+        if (firstImage) {
+          firstImage.isCover = true;
+          setCoverImage(firstImage.url);
+        }
       }
       return filtered;
     });
@@ -280,16 +339,16 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-7 max-h-[82vh] overflow-y-auto">
-          {/* SECTION 1: Local Multi-Image & Video Uploader */}
+          {/* SECTION 1: 이미지 업로드 + 영상 링크 등록 */}
           <div className="p-5 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <span className="text-xs font-bold text-blue-400 flex items-center gap-1.5">
                   <Upload className="w-4 h-4" />
-                  <span>내 컴퓨터 이미지 & 동영상 다중 첨부 (Gallery)</span>
+                  <span>배너·상세페이지 이미지 첨부</span>
                 </span>
                 <p className="text-[11px] text-zinc-400 mt-0.5">
-                  JPG, PNG, GIF, WebP 이미지 및 MP4, WebM 영상 파일을 여러 장 선택하여 업로드하세요.
+                  JPG, PNG, GIF, WebP 이미지를 여러 장 선택해 첨부하세요. 여러 장이면 방문자가 좌우로 넘겨 볼 수 있습니다.
                 </p>
               </div>
               <span className="text-xs font-mono text-zinc-400">
@@ -297,7 +356,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
               </span>
             </div>
 
-            {/* Drag & Drop Upload Zone */}
+            {/* Drag & Drop Upload Zone (이미지 전용) */}
             <div
               onDragOver={(e) => {
                 e.preventDefault();
@@ -320,7 +379,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
                 ref={fileInputRef}
                 type="file"
                 multiple
-                accept="image/*,video/*"
+                accept="image/*"
                 onChange={(e) => handleFilesSelected(e.target.files)}
                 className="hidden"
               />
@@ -328,7 +387,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
               {isProcessingFiles ? (
                 <div className="flex flex-col items-center justify-center space-y-2 py-3">
                   <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
-                  <span className="text-xs text-zinc-300 font-medium">선택한 미디어 파일을 최적화 처리 중입니다...</span>
+                  <span className="text-xs text-zinc-300 font-medium">선택한 이미지를 최적화 처리 중입니다...</span>
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center space-y-2 py-2">
@@ -337,14 +396,119 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
                   </div>
                   <div>
                     <span className="text-xs font-bold text-white block">
-                      클릭하여 내 컴퓨터에서 파일 선택 또는 여기로 드래그
+                      클릭하여 이미지 선택 또는 여기로 드래그
                     </span>
                     <span className="text-[11px] text-zinc-500">
-                      사진 여러 장 동시 선택 가능 · 동영상(MP4/WebM) 첨부 지원
+                      사진 여러 장 동시 선택 가능 · 영상은 아래 링크로 등록
                     </span>
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* 영상 링크 등록 (YouTube / Vimeo) */}
+            <div className="pt-4 border-t border-zinc-850 space-y-3">
+              <div>
+                <span className="text-xs font-bold text-blue-400 flex items-center gap-1.5">
+                  <Film className="w-4 h-4" />
+                  <span>영상 링크 추가 (YouTube / Vimeo)</span>
+                </span>
+                <p className="text-[11px] text-zinc-400 mt-0.5">
+                  영상은 파일 업로드 대신 YouTube·Vimeo 에 올린 뒤 링크만 붙여넣으세요. 썸네일이 먼저 보이고, 방문자가 누르면 재생됩니다.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="relative flex-1">
+                    <Link2 className="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={videoUrlInput}
+                      onChange={(e) => {
+                        setVideoUrlInput(e.target.value);
+                        setVideoError('');
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddVideoLink();
+                        }
+                      }}
+                      placeholder="https://youtu.be/XXXXXXXXXXX 또는 https://vimeo.com/76979871"
+                      className="w-full pl-9 pr-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddVideoLink}
+                    disabled={!videoUrlInput.trim()}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-colors cursor-pointer shrink-0"
+                  >
+                    영상 링크 추가
+                  </button>
+                </div>
+
+                {/* 링크를 입력하는 즉시 해석 결과를 알려 줍니다. */}
+                {videoUrlInput.trim() && (
+                  <p
+                    className={`text-[11px] flex items-center gap-1.5 ${
+                      parsedVideoInput ? 'text-emerald-400' : 'text-amber-400'
+                    }`}
+                  >
+                    {parsedVideoInput ? (
+                      <>
+                        <Check className="w-3 h-3" />
+                        <span>{VIDEO_PROVIDER_LABEL[parsedVideoInput.provider]} 링크로 인식되었습니다.</span>
+                      </>
+                    ) : (
+                      <>
+                        <AlertCircle className="w-3 h-3" />
+                        <span>YouTube 또는 Vimeo 링크 형식이 아닙니다.</span>
+                      </>
+                    )}
+                  </p>
+                )}
+
+                {videoError && (
+                  <p className="text-[11px] text-red-400 flex items-start gap-1.5">
+                    <AlertCircle className="w-3 h-3 mt-0.5 shrink-0" />
+                    <span>{videoError}</span>
+                  </p>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    value={videoNameInput}
+                    onChange={(e) => setVideoNameInput(e.target.value)}
+                    placeholder="영상 제목 (선택, 예: 캠페인 메인 필름)"
+                    className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-blue-500"
+                  />
+                  <input
+                    type="text"
+                    value={videoThumbInput}
+                    onChange={(e) => setVideoThumbInput(e.target.value)}
+                    placeholder="썸네일 이미지 주소 (선택, 비우면 자동)"
+                    className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                {/* 링크 미리보기 — 실제 방문자가 보게 될 모습 */}
+                {parsedVideoInput && (
+                  <div className="pt-1">
+                    <p className="text-[10px] text-zinc-500 mb-1.5">미리보기 (방문자 화면과 동일)</p>
+                    <div className="max-w-sm">
+                      <VideoPlayer
+                        url={videoUrlInput.trim()}
+                        thumbnail={videoThumbInput.trim() || undefined}
+                        title={videoNameInput.trim() || '영상 미리보기'}
+                        aspectClassName="aspect-video"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Uploaded Gallery Thumbnails Grid */}
@@ -365,12 +529,18 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
                     >
                       {media.type === 'video' ? (
                         <div className="w-full h-full relative bg-black flex items-center justify-center">
-                          <video
-                            src={media.url}
-                            className="w-full h-full object-cover"
-                            muted
-                            playsInline
-                          />
+                          {/* 영상은 video 태그로 로드하지 않고 썸네일 이미지를 씁니다.
+                              (video 태그를 여러 개 두면 관리자 화면이 무거워집니다) */}
+                          {videoThumbFor(media) ? (
+                            <img
+                              src={videoThumbFor(media)!}
+                              alt={media.name}
+                              className="w-full h-full object-cover"
+                              referrerPolicy="no-referrer"
+                            />
+                          ) : (
+                            <Film className="w-7 h-7 text-zinc-600" />
+                          )}
                           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                             <Play className="w-6 h-6 text-white drop-shadow" />
                           </div>

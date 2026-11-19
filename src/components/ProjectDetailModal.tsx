@@ -13,11 +13,14 @@ import {
   Sparkles,
   ChevronLeft,
   ChevronRight,
-  Play,
+  Expand,
   Film,
   Image as ImageIcon
 } from 'lucide-react';
 import { BeforeAfterSlider } from './BeforeAfterSlider';
+import { VideoPlayer } from './media/VideoPlayer';
+import { MediaLightbox } from './media/MediaLightbox';
+import { parseVideoUrl, VIDEO_PROVIDER_LABEL } from '../utils/videoEmbed';
 
 interface ProjectDetailModalProps {
   project: Project;
@@ -64,6 +67,21 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project,
 
   const [activeIndex, setActiveIndex] = useState(0);
   const activeMedia = mediaList[activeIndex] || mediaList[0];
+
+  // 라이트박스(전체 화면 크게 보기) 열림 상태
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+
+  /**
+   * 목록·썸네일 스트립에 쓸 미리보기 주소.
+   * 영상은 재생 전에 보여줄 정지 이미지가 필요합니다.
+   *  · YouTube → 영상 ID 로 자동 생성
+   *  · Vimeo   → 관리자가 지정한 값 우선, 없으면 null(아이콘 대체)
+   */
+  const thumbOf = (m: MediaItem): string | null => {
+    if (m.type !== 'video') return m.url;
+    if (m.thumbnail) return m.thumbnail;
+    return parseVideoUrl(m.url)?.thumbnail ?? null;
+  };
 
   const handlePrev = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -150,58 +168,73 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project,
             </div>
           </div>
 
-          {/* Primary Visual / Video Showcase Gallery */}
+          {/* Primary Visual / Video Showcase Gallery
+              ─ 영상: 썸네일 먼저 → 클릭해야 재생 (YouTube/Vimeo 링크)
+              ─ 이미지: 클릭하면 전체 화면 라이트박스로 크게 보기 */}
           <div className="space-y-4">
-            <div data-theme="dark" className="relative rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-950 flex items-center justify-center min-h-[300px] md:min-h-[460px] max-h-[580px]">
-              {/* Media Renderer */}
+            <div className="relative">
               {activeMedia.type === 'video' ? (
-                <div className="w-full h-full relative flex items-center justify-center bg-black">
-                  <video
-                    key={activeMedia.url}
-                    src={activeMedia.url}
-                    controls
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    className="w-full max-h-[560px] object-contain rounded-2xl"
-                  />
-                </div>
-              ) : (
-                <img
-                  src={activeMedia.url}
-                  alt={activeMedia.name || project.title}
-                  className="w-full h-auto max-h-[560px] object-contain rounded-2xl"
-                  referrerPolicy="no-referrer"
+                <VideoPlayer
+                  key={activeMedia.id}
+                  url={activeMedia.url}
+                  thumbnail={activeMedia.thumbnail}
+                  title={activeMedia.name || `${project.title} 영상`}
+                  aspectClassName="aspect-video"
+                  className="max-h-[560px]"
                 />
+              ) : (
+                <button
+                  type="button"
+                  data-theme="dark"
+                  onClick={() => setLightboxOpen(true)}
+                  className="group relative block w-full rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-950 cursor-zoom-in"
+                  aria-label={`${activeMedia.name || project.title} 크게 보기`}
+                >
+                  <img
+                    src={activeMedia.url}
+                    alt={activeMedia.name || project.title}
+                    className="w-full h-auto max-h-[560px] object-contain mx-auto"
+                    referrerPolicy="no-referrer"
+                  />
+                  {/* 확대 안내 오버레이 */}
+                  <span className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-black/75 backdrop-blur-md text-zinc-200 text-[11px] font-medium px-2.5 py-1.5 rounded-lg border border-zinc-700 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Expand className="w-3.5 h-3.5" />
+                    크게 보기
+                  </span>
+                </button>
               )}
 
-              {/* Navigation Arrows (if multiple media) */}
+              {/* 좌우 이동 버튼 — 여러 장일 때 */}
               {mediaList.length > 1 && (
                 <>
                   <button
                     onClick={handlePrev}
                     className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/70 hover:bg-black text-white flex items-center justify-center backdrop-blur-md border border-zinc-700 transition-all cursor-pointer shadow-lg"
-                    aria-label="Previous media"
+                    aria-label="이전 미디어"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
                   <button
                     onClick={handleNext}
                     className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/70 hover:bg-black text-white flex items-center justify-center backdrop-blur-md border border-zinc-700 transition-all cursor-pointer shadow-lg"
-                    aria-label="Next media"
+                    aria-label="다음 미디어"
                   >
                     <ChevronRight className="w-5 h-5" />
                   </button>
                 </>
               )}
 
-              {/* Top Media Tag Overlay */}
-              <div className="absolute top-4 left-4 bg-black/80 backdrop-blur-md px-3 py-1 rounded-lg border border-zinc-800 text-[11px] font-mono text-zinc-300 flex items-center gap-1.5">
+              {/* 좌상단 미디어 종류 · 순번 */}
+              <div className="absolute top-4 left-4 bg-black/80 backdrop-blur-md px-3 py-1 rounded-lg border border-zinc-800 text-[11px] font-mono text-zinc-300 flex items-center gap-1.5 pointer-events-none">
                 {activeMedia.type === 'video' ? (
                   <>
                     <Film className="w-3.5 h-3.5 text-blue-400" />
-                    <span>동영상 ({activeIndex + 1}/{mediaList.length})</span>
+                    <span>
+                      동영상
+                      {parseVideoUrl(activeMedia.url) &&
+                        ` · ${VIDEO_PROVIDER_LABEL[parseVideoUrl(activeMedia.url)!.provider]}`}
+                      {' '}({activeIndex + 1}/{mediaList.length})
+                    </span>
                   </>
                 ) : (
                   <>
@@ -212,44 +245,53 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project,
               </div>
             </div>
 
-            {/* Thumbnail Filmstrip (Multiple Images & Videos Selector) */}
+            {/* 썸네일 스트립 — 영상은 video 태그 대신 썸네일 이미지를 씁니다.
+                (video 태그를 나열하면 썸네일마다 영상을 로드해 낭비가 큽니다) */}
             {mediaList.length > 1 && (
               <div className="flex items-center gap-3 overflow-x-auto py-2 px-1">
-                {mediaList.map((media, idx) => (
-                  <button
-                    key={media.id || idx}
-                    onClick={() => setActiveIndex(idx)}
-                    className={`relative rounded-xl overflow-hidden border w-24 h-16 shrink-0 transition-all cursor-pointer ${
-                      activeIndex === idx
-                        ? 'border-blue-500 ring-2 ring-blue-500/40 scale-105'
-                        : 'border-zinc-800 hover:border-zinc-700 opacity-70 hover:opacity-100'
-                    }`}
-                  >
-                    {media.type === 'video' ? (
-                      <div className="w-full h-full bg-zinc-900 flex items-center justify-center relative">
-                        <video src={media.url} className="w-full h-full object-cover" muted />
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                          <Play className="w-4 h-4 text-white" />
-                        </div>
-                        <span className="absolute bottom-1 right-1 bg-black/80 text-[9px] text-blue-400 font-mono px-1 rounded">
-                          VID
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="w-full h-full relative">
+                {mediaList.map((media, idx) => {
+                  const thumb = thumbOf(media);
+                  return (
+                    <button
+                      key={media.id || idx}
+                      onClick={() => setActiveIndex(idx)}
+                      className={`relative rounded-xl overflow-hidden border w-24 h-16 shrink-0 transition-all cursor-pointer ${
+                        activeIndex === idx
+                          ? 'border-blue-500 ring-2 ring-blue-500/40 scale-105'
+                          : 'border-zinc-800 hover:border-zinc-700 opacity-70 hover:opacity-100'
+                      }`}
+                    >
+                      {thumb ? (
                         <img
-                          src={media.url}
+                          src={thumb}
                           alt={media.name}
                           className="w-full h-full object-cover"
                           referrerPolicy="no-referrer"
+                          loading="lazy"
                         />
-                        <span className="absolute bottom-1 right-1 bg-black/80 text-[9px] text-zinc-400 font-mono px-1 rounded">
-                          IMG
-                        </span>
-                      </div>
-                    )}
-                  </button>
-                ))}
+                      ) : (
+                        <div className="w-full h-full bg-zinc-900 flex items-center justify-center">
+                          <Film className="w-5 h-5 text-zinc-600" />
+                        </div>
+                      )}
+
+                      {media.type === 'video' && (
+                        <>
+                          <div className="absolute inset-0 bg-black/35 flex items-center justify-center">
+                            <span className="w-6 h-6 rounded-full bg-white/90 flex items-center justify-center">
+                              <svg viewBox="0 0 24 24" className="w-3 h-3 fill-zinc-900 ml-0.5">
+                                <path d="M8 5v14l11-7z" />
+                              </svg>
+                            </span>
+                          </div>
+                          <span className="absolute bottom-1 right-1 bg-black/80 text-[9px] text-blue-400 font-mono px-1 rounded">
+                            VID
+                          </span>
+                        </>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -362,6 +404,16 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project,
           </div>
         </div>
       </div>
+
+      {/* 전체 화면 라이트박스 — 이미지 썸네일을 누르면 열립니다.
+          좌우 화살표 · 방향키 · 모바일 스와이프로 여러 장을 넘겨 볼 수 있습니다. */}
+      {lightboxOpen && (
+        <MediaLightbox
+          items={mediaList}
+          initialIndex={activeIndex}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
     </div>
   );
 };
