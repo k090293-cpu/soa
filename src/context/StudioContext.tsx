@@ -33,6 +33,7 @@ import {
   moveKeyTo,
 } from '../utils/homeBlocks';
 import { offloadMedia, hydrateMedia, containsMediaRef } from '../utils/mediaVault';
+import { api } from '../utils/api';
 
 interface StudioContextType {
   projects: Project[];
@@ -122,8 +123,18 @@ interface StudioContextType {
   isAdminLoggedIn: boolean;
   isAdminModalOpen: boolean;
   setIsAdminModalOpen: (open: boolean) => void;
-  loginAdmin: (password: string) => boolean;
-  logoutAdmin: () => void;
+  /**
+   * 관리자 로그인. 비밀번호 검증은 서버에서만 이루어집니다.
+   * (예전처럼 비밀번호가 프론트엔드 번들에 들어 있지 않습니다)
+   */
+  loginAdmin: (password: string) => Promise<{ ok: boolean; message?: string }>;
+  logoutAdmin: () => Promise<void>;
+  /** 서버 콘텐츠 저장이 진행 중인지 (관리자 저장 상태 표시용) */
+  isSavingToServer: boolean;
+  /** 마지막으로 서버 저장에 성공한 시각 (없으면 null) */
+  lastServerSaveAt: string | null;
+  /** 서버에 연결할 수 있는지 여부 (false 면 정적 배포 모드로 동작) */
+  isServerOnline: boolean;
   addProject: (projectData: Omit<Project, 'id'>) => void;
   updateProject: (id: string, updated: Partial<Project>) => void;
   deleteProject: (id: string) => void;
@@ -133,7 +144,11 @@ interface StudioContextType {
   restoreProjectsFromBackup: () => boolean;
   deleteBackup: () => void;
   backupInfo: { savedAt: string; count: number } | null;
-  addInquiry: (inquiryData: Omit<ProjectInquiry, 'id' | 'createdAt' | 'status'>) => void;
+  addInquiry: (
+    inquiryData: Omit<ProjectInquiry, 'id' | 'createdAt' | 'status'>
+  ) => Promise<{ ok: boolean; message?: string }>;
+  /** 관리자: 서버에서 최신 문의 목록을 다시 불러옵니다. */
+  refreshInquiries: () => Promise<void>;
   updateInquiryStatus: (id: string, status: InquiryStatus, adminNote?: string) => void;
   deleteInquiry: (id: string) => void;
   updateConfig: (updated: Partial<StudioConfig>) => void;
@@ -240,6 +255,17 @@ const storageErrorMessage = (label: string) =>
   `${label} 자동 저장에 실패했습니다. 브라우저 저장 공간이 가득 찼을 수 있습니다. ` +
   '용량이 큰 이미지/영상을 정리한 뒤 다시 시도해 주세요. (지금 화면의 변경 내용은 새로고침하면 사라집니다)';
 
+/**
+ * 서버 저장 여부를 판단하기 위한 스냅샷 문자열.
+ * 콘텐츠가 실제로 바뀌었을 때만 PUT 하도록, 직전에 저장/로드한 값과 비교합니다.
+ * (테마 토글처럼 잦은 변경이 매번 디스크 쓰기로 이어지지 않게 하려는 목적)
+ */
+const snapshotKey = (
+  projects: Project[] | null | undefined,
+  menuContent: SiteMenuContent | null | undefined,
+  config: StudioConfig | null | undefined
+) => JSON.stringify({ projects: projects ?? null, menuContent: menuContent ?? null, config: config ?? null });
+
 export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Load Projects
   const [projects, setProjects] = useState<Project[]>(loadProjectsFromStorage);
@@ -312,10 +338,16 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   // Admin Auth State
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(() => {
-    return sessionStorage.getItem(STORAGE_KEYS.ADMIN_SESSION) === 'true';
-  });
+  // 예전에는 sessionStorage 플래그만 봤기 때문에 누구나 개발자 도구로 우회할 수 있었습니다.
+  // 이제는 서버가 발급한 HttpOnly 세션 쿠키가 유일한 근거이며, 아래 effect 에서 서버에 확인합니다.
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+
+  // ── 서버 연동 상태 ──────────────────────────────────────────────────────
+  // isServerOnline: /api/content 에 응답이 있는지. false 면 정적 배포 모드(기존 동작)로 동작합니다.
+  const [isServerOnline, setIsServerOnline] = useState(false);
+  const [isSavingToServer, setIsSavingToServer] = useState(false);
+  const [lastServerSaveAt, setLastServerSaveAt] = useState<string | null>(null);
 
   // Active Project Detail Modal
   const [activeProjectDetail, setActiveProjectDetail] = useState<Project | null>(null);
@@ -341,6 +373,66 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // 적용되도록 비교 기준으로 씁니다.
   const initialProjectsRef = useRef(projects);
   const initialMenuRef = useRef(menuContent);
+
+  // 서버에 마지막으로 저장(또는 로드)한 스냅샷. 불필요한 재저장을 막는 비교 기준입니다.
+  const lastSyncedRef = useRef<string>('');
+
+  /**
+   * ── 서버 부트스트랩 ─────────────────────────────────────────────────────
+   * 1) /api/content 로 "모든 방문자에게 공통인" 콘텐츠를 받아옵니다.
+   *    서버에 저장된 값이 없으면(null) 번들 기본값을 그대로 쓰므로 미리보기도 동일하게 보입니다.
+   * 2) /api/auth/session 으로 HttpOnly 세션 쿠키의 유효성을 확인합니다.
+   *    (예전의 sessionStorage 플래그는 누구나 위조할 수 있어 더 이상 사용하지 않습니다)
+   */
+  useEffect(() => {
+    let cancelled = false;
+
+    const bootstrap = async () => {
+      const [remote, authenticated] = await Promise.all([api.getContent(), api.getSession()]);
+      if (cancelled) return;
+
+      // 서버가 응답하면 "서버 모드" 입니다. 실패하면 정적 배포 모드로 남습니다.
+      setIsServerOnline(remote !== null);
+      setIsAdminLoggedIn(authenticated);
+
+      if (remote) {
+        // 부트스트랩은 최초 렌더 직후 1회만 실행되고, 그 전에는 사용자가 아무것도 편집할 수 없습니다.
+        // 따라서 서버 값이 "관리자가 방금 고친 내용"을 덮어쓸 위험은 없습니다.
+        if (remote.projects && Array.isArray(remote.projects) && remote.projects.length > 0) {
+          setProjects(remote.projects);
+        }
+        if (remote.menuContent) {
+          setMenuContent((prev) => ({
+            ...prev,
+            ...remote.menuContent!,
+            // 서버 값이 일부만 있어도 화면이 깨지지 않도록 필수 하위 구조를 보정합니다.
+            navMenus: remote.menuContent!.navMenus || prev.navMenus,
+            worksCategories: remote.menuContent!.worksCategories || prev.worksCategories,
+            home: { ...prev.home, ...(remote.menuContent!.home || {}) },
+            about: { ...prev.about, ...(remote.menuContent!.about || {}) },
+            contact: { ...prev.contact, ...(remote.menuContent!.contact || {}) },
+          }));
+        }
+        if (remote.config) {
+          setConfig((prev) => ({ ...prev, ...remote.config! }));
+        }
+        if (remote.updatedAt) {
+          setLastServerSaveAt(remote.updatedAt);
+          lastSyncedRef.current = snapshotKey(remote.projects, remote.menuContent, remote.config);
+        }
+      }
+
+      // 서버 콘텐츠 로드가 끝났으므로 화면을 열어 줍니다.
+      setIsHydrated(true);
+    };
+
+    void bootstrap();
+    return () => {
+      cancelled = true;
+    };
+    // 최초 1회만 실행합니다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── IndexedDB 미디어 복원 ────────────────────────────────────────────────
   // 저장된 값에는 이미지가 idb-media://... 짧은 참조로 들어 있을 수 있습니다.
@@ -468,6 +560,64 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
   }, [menuContent, isHydrated]);
 
+  // ── 서버 저장 (관리자 편집 → 모든 방문자에게 반영) ─────────────────────────
+  // 이 effect 가 "관리자가 고친 내용이 다른 사람에게 보이지 않던" 문제를 해결합니다.
+  //  · 조건: 서버가 살아 있고 + 관리자로 로그인되어 있을 때만 저장합니다.
+  //    (방문자 브라우저가 서버 콘텐츠를 실수로 덮어쓰는 사고를 원천 차단)
+  //  · 스냅샷 비교: 직전에 저장/로드한 값과 같으면 요청하지 않습니다.
+  //    (테마 토글·되돌리기 등 잦은 변경이 매번 디스크 쓰기로 이어지지 않게 함)
+  useEffect(() => {
+    if (!isHydrated || !isAdminLoggedIn || !isServerOnline) return;
+
+    const key = snapshotKey(projects, menuContent, config);
+    if (key === lastSyncedRef.current) return;
+
+    let cancelled = false;
+    // 타이핑/드래그 중간 상태를 매번 저장하지 않도록 잠깐 모읍니다.
+    const timer = setTimeout(() => {
+      void (async () => {
+        setIsSavingToServer(true);
+        const result = await api.saveContent({ projects, menuContent, config });
+        if (cancelled) return;
+
+        setIsSavingToServer(false);
+
+        if (result.ok) {
+          lastSyncedRef.current = key;
+          setLastServerSaveAt(new Date().toISOString());
+          setStorageWarning((prev) => (prev?.key === 'server' ? null : prev));
+          return;
+        }
+
+        // 세션이 만료되었으면 관리자 상태를 내려 편집을 계속하지 못하게 합니다.
+        if (result.unauthorized) {
+          setIsAdminLoggedIn(false);
+          setIsHomeInlineEditMode(false);
+        }
+
+        setStorageWarning({
+          key: 'server',
+          message:
+            result.message ||
+            '서버 저장에 실패했습니다. 변경 내용이 아직 다른 방문자에게 반영되지 않았습니다.',
+        });
+      })();
+    }, 800);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [projects, menuContent, config, isHydrated, isAdminLoggedIn, isServerOnline]);
+
+  // 관리자 로그인 시 최신 문의 목록을 서버에서 가져옵니다.
+  // (문의는 공개 GET 이 아니므로 로그인 전에는 조회할 수 없습니다)
+  useEffect(() => {
+    if (!isAdminLoggedIn) return;
+    void refreshInquiries();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdminLoggedIn]);
+
   // 사이트 테마(다크 / 화이트) 적용 ─────────────────────────────────────────
   const theme: ThemeMode = config.theme === 'light' ? 'light' : 'dark';
 
@@ -486,26 +636,25 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setTheme(theme === 'dark' ? 'light' : 'dark');
   };
 
-  // Admin Login
-  const loginAdmin = (password: string): boolean => {
-    // 관리자 비밀번호는 환경변수로 재정의할 수 있습니다. (기본값은 기존 동작 유지)
-    const adminPassword = (import.meta.env.VITE_ADMIN_PASSWORD as string | undefined)?.trim() || '1012';
-    if (password.trim() === adminPassword) {
+  // Admin Login — 비밀번호 검증은 서버에서만 이루어집니다.
+  // (예전에는 '1012' 가 프론트엔드 번들에 그대로 들어 있어 누구나 열어볼 수 있었습니다)
+  const loginAdmin = async (password: string): Promise<{ ok: boolean; message?: string }> => {
+    const result = await api.login(password);
+    if (result.ok) {
       setIsAdminLoggedIn(true);
-      sessionStorage.setItem(STORAGE_KEYS.ADMIN_SESSION, 'true');
-      return true;
+      return { ok: true };
     }
-    return false;
+    return { ok: false, message: result.message || '비밀번호가 일치하지 않습니다.' };
   };
 
-  const logoutAdmin = () => {
+  const logoutAdmin = async (): Promise<void> => {
     setIsAdminLoggedIn(false);
-    sessionStorage.removeItem(STORAGE_KEYS.ADMIN_SESSION);
     // 편집 모드가 켜진 채 남아 방문자가 글자를 수정할 수 있는 문제를 방지합니다.
     setIsHomeInlineEditMode(false);
     setSelectedHomeLayerId(null);
     setIsSplitEditorOpen(false);
     setIsAdminModalOpen(false);
+    await api.logout();
   };
 
   // 관리자 권한이 없어지거나 모달이 닫히면 편집 모드를 반드시 해제합니다.
@@ -617,19 +766,38 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   // Inquiry operations
-  const addInquiry = (inquiryData: Omit<ProjectInquiry, 'id' | 'createdAt' | 'status'>) => {
+  // 예전에는 문의가 제출한 사람의 브라우저에만 남아 관리자가 볼 수 없었습니다(사실상 유실).
+  // 이제는 서버에 저장하고, 화면에는 "이번 세션의 사본"만 유지합니다.
+  const addInquiry = async (
+    inquiryData: Omit<ProjectInquiry, 'id' | 'createdAt' | 'status'>
+  ): Promise<{ ok: boolean; message?: string }> => {
+    const result = await api.createInquiry(inquiryData as unknown as Record<string, unknown>);
+
+    if (!result.ok) return result;
+
+    // 서버 저장에 성공한 경우에만 화면 목록에도 반영합니다.
     const now = new Date();
     const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     const newInq: ProjectInquiry = {
       ...inquiryData,
-      id: `inq-${Date.now()}`,
+      id: `inq-local-${Date.now()}`,
       createdAt: formattedDate,
       status: '신규',
     };
     setInquiries((prev) => [newInq, ...prev]);
+
+    // 방문자는 문의 목록을 볼 수 없으므로, 관리자 화면은 다음 새로고침 때 서버에서 다시 읽습니다.
+    return { ok: true };
+  };
+
+  /** 관리자: 서버에서 최신 문의 목록을 다시 불러옵니다. */
+  const refreshInquiries = async () => {
+    const list = await api.listInquiries();
+    if (list) setInquiries(list);
   };
 
   const updateInquiryStatus = (id: string, status: InquiryStatus, adminNote?: string) => {
+    // 화면을 먼저 갱신해 즉시 반응하도록 하고(낙관적 업데이트), 서버에도 반영합니다.
     setInquiries((prev) =>
       prev.map((item) =>
         item.id === id
@@ -641,10 +809,21 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           : item
       )
     );
+
+    // 로컬에서만 만든 항목(서버 저장 실패)은 서버에 존재하지 않으므로 건너뜁니다.
+    if (!id.startsWith('inq-local-')) {
+      void api.updateInquiry(id, {
+        status,
+        ...(adminNote !== undefined ? { adminNote } : {}),
+      });
+    }
   };
 
   const deleteInquiry = (id: string) => {
     setInquiries((prev) => prev.filter((item) => item.id !== id));
+    if (!id.startsWith('inq-local-')) {
+      void api.deleteInquiry(id);
+    }
   };
 
   const updateConfig = (updated: Partial<StudioConfig>) => {
@@ -1233,6 +1412,7 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         deleteBackup,
         backupInfo,
         addInquiry,
+        refreshInquiries,
         updateInquiryStatus,
         deleteInquiry,
         updateConfig,
@@ -1247,6 +1427,9 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         storageWarning,
         dismissStorageWarning,
         isHydrated,
+        isSavingToServer,
+        lastServerSaveAt,
+        isServerOnline,
       }}
     >
       {children}

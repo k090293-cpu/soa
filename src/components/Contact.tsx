@@ -56,6 +56,7 @@ export const Contact: React.FC = () => {
   const [submittedSuccess, setSubmittedSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [copiedEmail, setCopiedEmail] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // If a user clicked "이 프로젝트/서비스 문의하기", auto-select that category
   useEffect(() => {
@@ -82,9 +83,10 @@ export const Contact: React.FC = () => {
     setTimeout(() => setCopiedEmail(false), 2000);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
+    if (isSubmitting) return;
 
     if (!clientName.trim()) {
       setErrorMessage('성함 또는 담당자명을 입력해 주세요.');
@@ -107,28 +109,41 @@ export const Contact: React.FC = () => {
       return;
     }
 
-    // Save inquiry to context/localStorage
-    addInquiry({
-      clientName: clientName.trim(),
-      company: company.trim() || undefined,
-      contact: contact.trim(),
-      email: email.trim(),
-      categories,
-      budget,
-      schedule,
-      description: description.trim(),
-      referenceUrl: referenceUrl.trim() || undefined,
-    });
+    // 서버에 문의를 저장합니다. (예전에는 방문자 브라우저에만 남아 관리자가 볼 수 없었습니다)
+    setIsSubmitting(true);
+    try {
+      const result = await addInquiry({
+        clientName: clientName.trim(),
+        company: company.trim() || undefined,
+        contact: contact.trim(),
+        email: email.trim(),
+        categories,
+        budget,
+        schedule,
+        description: description.trim(),
+        referenceUrl: referenceUrl.trim() || undefined,
+      });
 
-    setSubmittedSuccess(true);
-    // Reset form
-    setClientName('');
-    setCompany('');
-    setContact('');
-    setEmail('');
-    setDescription('');
-    setReferenceUrl('');
-    setSelectedInquiryCategory(null);
+      if (!result.ok) {
+        setErrorMessage(
+          result.message ||
+            '문의 접수에 실패했습니다. 잠시 후 다시 시도하시거나 아래 채널로 직접 연락해 주세요.'
+        );
+        return;
+      }
+
+      setSubmittedSuccess(true);
+      // Reset form
+      setClientName('');
+      setCompany('');
+      setContact('');
+      setEmail('');
+      setDescription('');
+      setReferenceUrl('');
+      setSelectedInquiryCategory(null);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const availableCategories = [

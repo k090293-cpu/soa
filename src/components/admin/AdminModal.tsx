@@ -70,6 +70,8 @@ export const AdminModal: React.FC = () => {
   // Login form state
   const [passwordInput, setPasswordInput] = useState('');
   const [loginError, setLoginError] = useState(false);
+  const [loginMessage, setLoginMessage] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   // Tabs
   const [activeTab, setActiveTab] = useState<'content' | 'preview' | 'layers' | 'projects' | 'inquiries' | 'settings'>('content');
@@ -159,14 +161,25 @@ export const AdminModal: React.FC = () => {
 
   if (!isAdminModalOpen) return null;
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = loginAdmin(passwordInput);
-    if (success) {
-      setPasswordInput('');
-      setLoginError(false);
-    } else {
-      setLoginError(true);
+    if (isLoggingIn) return;
+
+    setIsLoggingIn(true);
+    setLoginMessage('');
+    try {
+      // 비밀번호 검증은 서버에서 이루어집니다. (번들에 비밀번호가 없습니다)
+      const result = await loginAdmin(passwordInput);
+      if (result.ok) {
+        setPasswordInput('');
+        setLoginError(false);
+        setLoginMessage('');
+      } else {
+        setLoginError(true);
+        setLoginMessage(result.message || '비밀번호가 일치하지 않습니다.');
+      }
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -364,18 +377,27 @@ export const AdminModal: React.FC = () => {
                   />
                   {loginError && (
                     <p className="text-xs text-red-400 flex items-center justify-center gap-1 pt-1">
-                      <AlertCircle className="w-3.5 h-3.5" />
-                      <span>비밀번호가 일치하지 않습니다.</span>
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>{loginMessage || '비밀번호가 일치하지 않습니다.'}</span>
                     </p>
                   )}
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer shadow-lg shadow-blue-600/30"
+                  disabled={isLoggingIn || !passwordInput}
+                  className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-colors cursor-pointer shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2"
                 >
-                  관리자 대시보드 로그인
+                  {isLoggingIn && (
+                    <span className="w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  )}
+                  <span>{isLoggingIn ? '확인 중…' : '관리자 대시보드 로그인'}</span>
                 </button>
+
+                {/* 서버 검증 안내: 비밀번호는 서버에서만 확인됩니다 */}
+                <p className="text-[10px] text-zinc-600 leading-relaxed">
+                  비밀번호는 서버에서 암호화되어 검증되며, 브라우저에는 저장되지 않습니다.
+                </p>
               </form>
             </div>
           ) : (
