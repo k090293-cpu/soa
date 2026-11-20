@@ -31,9 +31,23 @@
 
 /** 클라이언트의 로컬 폴백과는 별개입니다(서버가 응답하면 이 값이 기준). */
 const PBKDF2_SALT = 'soa-cf-admin-v1';
-const PBKDF2_ITERATIONS = 120_000;
-/** 비밀번호 '9392' 의 PBKDF2-SHA256 해시 (평문은 어디에도 저장하지 않습니다) */
-const PASSWORD_HASH = 'c0326cc4bf8c6cda8cff0d1872301e7593134e0293d3bacbb847955b81370492';
+/**
+ * [반복 횟수 상한 — 중요]
+ *  workerd(Cloudflare Workers 런타임)는 PBKDF2 반복 횟수를 100,000 으로 제한하고,
+ *  초과하면 `NotSupportedError: Pbkdf2 failed: iteration counts above 100000
+ *  are not supported` 를 던집니다. 이 값이 100,000 을 넘으면 로그인 경로가
+ *  예외로 죽어 500 이 납니다.
+ *
+ *  로컬 `wrangler dev` 는 이 상한을 강제하지 않아 로컬 테스트로는 잡히지
+ *  않습니다(실제로 120,000 으로 배포했다가 프로덕션에서만 500 이 났습니다).
+ *  그래서 상한에 정확히 맞춘 100,000 을 사용합니다.
+ *
+ *  해시는 Node 와 workerd 양쪽에서 동일하게 나오는 것을 확인했습니다.
+ *  (Node: crypto.pbkdf2Sync('9392', salt, 100000, 32, 'sha256'))
+ */
+const PBKDF2_ITERATIONS = 100_000;
+/** 비밀번호 '9392' 의 PBKDF2-SHA256 해시 @100,000회 (평문은 어디에도 저장하지 않습니다) */
+const PASSWORD_HASH = '551cd577f4dead0e75e5b84e7e2ba07f23cf00108528f5ef59de7fcd9bce9d26';
 
 /** 세션 서명 키 — 환경변수(SOA_SESSION_SECRET)가 있으면 그것을, 없으면 위 해시에서 유도 */
 const SESSION_COOKIE = 'soa_admin';
