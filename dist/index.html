@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ko" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PORTFOLIO_SO.A | Web & Video Design Studio</title>
+    <!-- 파비콘: 별도 파일 요청이 없도록 인라인 SVG(data URI)로 넣습니다.
+         (예전에는 /favicon.ico 404 가 매 방문마다 콘솔에 남았습니다) -->
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232563eb'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='central' text-anchor='middle' font-family='Helvetica,Arial,sans-serif' font-size='26' font-weight='700' fill='%23ffffff'%3ESO%3C/text%3E%3C/svg%3E"
+    />
+    <meta name="theme-color" content="#0b0c10" />
+    <meta name="description" content="PORTFOLIO_SO.A - 보이는 디자인을 넘어 성과를 만드는 웹디자인 & 영상 콘텐츠 크리에이티브 디자인 스튜디오" />
+    <meta property="og:title" content="PORTFOLIO_SO.A | Web & Video Design Studio" />
+    <meta property="og:description" content="PORTFOLIO_SO.A - 보이는 디자인을 넘어 성과를 만드는 웹디자인 & 영상 콘텐츠 크리에이티브 디자인 스튜디오" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <script>
+      // 테마 깜빡임(FOUC) 방지: React 마운트 전에 저장된 테마를 먼저 적용합니다.
+      (function () {
+        try {
+          var raw = localStorage.getItem('soa_studio_config_v2');
+          var theme = 'dark';
+          if (raw) {
+            var parsed = JSON.parse(raw);
+            if (parsed && (parsed.theme === 'light' || parsed.theme === 'dark')) {
+              theme = parsed.theme;
+            }
+          }
+          var root = document.documentElement;
+          root.setAttribute('data-theme', theme);
+          root.style.colorScheme = theme;
+          root.style.backgroundColor = theme === 'light' ? '#eef0f4' : '#0b0c10';
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      })();
+    </script>
+    <script type="module" crossorigin src="/assets/index-I1un5M-d.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-BgDw0LQk.css">
+  </head>
+  <body class="bg-[var(--app-bg)] text-[var(--app-fg)] selection:bg-blue-600 selection:text-white antialiased font-sans">
+    <div id="root"></div>
+  </body>
+</html>
+

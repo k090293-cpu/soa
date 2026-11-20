@@ -1,9 +1,9 @@
 {
   "name": "soa-portfolio",
-  "main": "site-worker.js",
+  "main": "cloudflare/site-worker.js",
   "compatibility_date": "2025-01-01",
   "assets": {
-    "directory": "site",
+    "directory": "dist",
     "binding": "ASSETS"
   },
   "d1_databases": [
