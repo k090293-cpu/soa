@@ -1,0 +1,21 @@
+{
+  "name": "soa-portfolio",
+  "main": "cloudflare/site-worker.js",
+  "compatibility_date": "2025-01-01",
+  "assets": {
+    "directory": "dist",
+    "binding": "ASSETS"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "soa-portfolio-db"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "soa-portfolio-media"
+    }
+  ]
+}
